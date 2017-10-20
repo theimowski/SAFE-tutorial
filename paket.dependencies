@@ -2,6 +2,9 @@ source https://api.nuget.org/v3/index.json
 
 nuget FSharp.Core
 nuget Suave
+nuget Fable.Core
+
+clitool dotnet-fable
 
 group Build
   source https://api.nuget.org/v3/index.json
