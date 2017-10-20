@@ -4,6 +4,8 @@ nuget FSharp.Core
 nuget Suave
 nuget Fable.Core
 
+nuget Fable.Import.Browser
+
 clitool dotnet-fable
 
 group Build
