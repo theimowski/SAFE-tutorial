@@ -4,6 +4,8 @@ open System
 
 open Fake
 
+let serverPath = "./src/Server/" |> FullName
+
 let runDotnet workingDir args =
     let result =
         ExecProcess (fun info ->
@@ -13,7 +15,7 @@ let runDotnet workingDir args =
     if result <> 0 then failwithf "dotnet %s failed" args
 
 Target "Build" (fun () -> 
-  runDotnet "." "build"
+  runDotnet serverPath "build"
 )
 
 RunTargetOrDefault "Build"
