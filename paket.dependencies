@@ -2,3 +2,8 @@ source https://api.nuget.org/v3/index.json
 
 nuget FSharp.Core
 nuget Suave
+
+group Build
+  source https://api.nuget.org/v3/index.json
+
+  nuget FAKE
