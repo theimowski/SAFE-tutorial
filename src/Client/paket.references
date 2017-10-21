@@ -1,5 +1,5 @@
 FSharp.Core
 Fable.Core
 dotnet-fable
-Fable.Import.Browser
 Fable.Elmish
+Fable.Elmish.React
