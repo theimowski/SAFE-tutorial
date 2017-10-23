@@ -6,15 +6,24 @@ open Elmish.React
 open Fable.Helpers.React.Props
 module R = Fable.Helpers.React
 
-type Model = string list
+open App
 
-type Msg = Idle
+type Model = 
+| Home   of Home.Model
+| Genre  of Genre.Model
+| Genres of Genres.Model
 
-let init () = 
-  ["Rock"; "Disco"; "Pop"]
+type Msg = Unit
+
+let init () = Genres (Genres.init())
 
 let update msg (model : Model) =
   model
+
+let subView = function
+| Home   m -> Home.view m
+| Genre  m -> Genre.view m
+| Genres m -> Genres.view m
 
 let view model dispatch =
   R.div [] [
@@ -24,17 +33,7 @@ let view model dispatch =
       ] 
     ]
 
-    R.div [ Id "main" ] [
-      R.h2 [] [ R.str "Browse Genres" ]
-      R.p [] [ 
-        R.str (sprintf "Select from %d genres:" (List.length model))
-      ]
-      R.ul [] [
-        for genre in model ->
-          let url = "/index.html"
-          R.li [] [ R.a [ Href url ] [ R.str genre ] ]
-      ]
-    ]
+    R.div [ Id "main" ] (subView model dispatch)
 
     R.div [ Id "footer"] [
       R.str "built with "
