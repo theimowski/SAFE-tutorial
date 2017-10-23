@@ -6,24 +6,29 @@ open Elmish.React
 open Fable.Helpers.React.Props
 module R = Fable.Helpers.React
 
-type Model = int
+type Model = unit
 
-type Msg = Increment | Decrement
+type Msg = Idle
 
-let init () = 0
+let init () = ()
 
 let update msg (model : Model) =
-  match msg with
-  | Increment -> model + 1
-  | Decrement -> model - 1
+  model
 
 let view model dispatch =
-  R.div []
-      [ R.h1 [] [ R.str "SAFE Template" ]
-        R.p  [] [ R.str "Press buttons to manipulate counter:" ]
-        R.button [ OnClick (fun _ -> dispatch Decrement) ] [ R.str "-" ]
-        R.div [] [ R.str (sprintf "%A" model) ]
-        R.button [ OnClick (fun _ -> dispatch Increment) ] [ R.str "+" ] ]
+  R.div [] [
+    R.div [ Id "header" ]
+      [ R.h1 [] [ 
+          R.a [ Href "/index.html" ] [ R.str "SAFE Music Store" ]
+      ] ]
+    
+    R.div [ Id "footer"] [
+      R.str "built with "
+      R.a [ Href "http://fsharp.org" ] [ R.str "F#" ]
+      R.str " and "
+      R.a [ Href "http://SAFE-Stack.github.io" ] [ R.str "SAFE Stack" ]
+    ]
+  ]
 
 Program.mkSimple init update view
 |> Program.withReact "elmish-app"
