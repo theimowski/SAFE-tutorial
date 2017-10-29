@@ -1,6 +1,8 @@
-module App
+module App.App
 
 open Elmish
+open Elmish.Browser.Navigation
+open Elmish.Browser.UrlParser
 open Elmish.React
 
 open Fable.Helpers.React.Props
@@ -15,10 +17,10 @@ type Model =
 
 type Msg = Unit
 
-let init () = Genres (Genres.init())
+let init _ = let m, c = Home.init() in Home m, c
 
 let update msg (model : Model) =
-  model
+  model, Cmd.none
 
 let subView = function
 | Home   m -> Home.view m
@@ -29,8 +31,8 @@ let view model dispatch =
   R.div [] [
     R.div [ Id "header" ] [ 
       R.h1 [] [ 
-        R.a [ Href "/index.html" ] [ R.str "SAFE Music Store" ]
-      ] 
+        R.a [ Href "#" ] [ R.str "SAFE Music Store" ]
+      ]
     ]
 
     R.div [ Id "main" ] (subView model dispatch)
@@ -43,6 +45,33 @@ let view model dispatch =
     ]
   ]
 
-Program.mkSimple init update view
+type Route =
+| Home
+| Genres
+| Genre of string
+
+let route : Parser<Route -> Route, _> =
+  oneOf [
+    map Home (top)
+    map Genres (s "genres")
+    map Genre  (s "genre" </> str)
+  ]
+
+let urlUpdate (result:Option<Route>) model =
+  match result with
+  | Some Home ->
+    let m, c = Home.init ()
+    Model.Home m, c
+  | Some (Genres) ->
+    let m, c = Genres.init ()
+    Model.Genres m, c
+  | Some (Genre g) ->
+    let m, c = Genre.init g
+    Model.Genre m, c
+  | None ->
+    model, Navigation.modifyUrl "#"
+
+Program.mkProgram init update view
+|> Program.toNavigable (parseHash route) urlUpdate
 |> Program.withReact "elmish-app"
 |> Program.run
