@@ -13,14 +13,21 @@ type Route =
 | Home
 | Genres
 | Genre of string
+| Album of int
+
+type Album =
+  { Id   : int
+    Name : string }
 
 type Model = 
   { Route  : Route
-    Genres : string list }
+    Genres : string list
+    Albums : Album list
+    Album  : Album option }
 
 type Msg =
-| GenresFetched    of string []
-| GenresFetchError of exn
+| GenresFetched of Result<string [], exn>
+| ShowAlbum of Album
 
 let getGenres () = promise {
   return! Fetch.fetchAs<string[]> "/api/genres" []
@@ -29,30 +36,39 @@ let getGenres () = promise {
 let init _ = 
   let model =
     { Route  = Home
-      Genres = [ ] }
-  let cmd = Cmd.ofPromise getGenres () GenresFetched GenresFetchError
+      Genres = [ ]
+      Albums = [ { Id = 1; Name = "Yo!" } ]
+      Album  = None }
+  let cmd = 
+    Cmd.ofPromise getGenres () (Ok >> GenresFetched) (Error >> GenresFetched)
   model, cmd
-
-let update msg (model : Model) =
-  match msg with
-  | GenresFetched gs   ->
-    { model with Genres = List.ofArray gs }, Cmd.none
-  | GenresFetchError _ ->
-    model, Cmd.none
 
 let hash = function
 | Home    -> "#"
 | Genre g -> sprintf "#genre/%s" g
 | Genres  -> "#genres"
+| Album a -> sprintf "#album/%d" a
 
 let route : Parser<Route -> Route, _> =
   oneOf [
     map Home (top)
     map Genres (s "genres")
     map Genre  (s "genre" </> str)
+    map Album  (s "album" </> i32)
   ]
 
 let href = hash >> Href
+
+let update msg (model : Model) =
+  match msg with
+  | GenresFetched (Ok gs) ->
+    { model with Genres = List.ofArray gs }, Cmd.none
+  | GenresFetched (Error _) ->
+    model, Cmd.none
+  | ShowAlbum album ->
+    { model with Album = Some album }, Navigation.newUrl (hash (Album album.Id))
+
+let onClick dispatch msg = OnClick (fun _ -> dispatch msg)
 
 let viewMain model dispatch =
   match model.Route with 
@@ -60,7 +76,16 @@ let viewMain model dispatch =
     [ R.str "Home"
       R.br []
       R.a [ href Genres ] [ R.str "Genres" ] ]
-  | Genre g -> [ R.str ("Genre: " + g) ]
+  | Genre genre -> 
+    [ R.str ("Genre: " + genre)
+      R.ul [] [
+        for album in model.Albums ->
+          R.li [] [ 
+            R.button [ onClick dispatch (ShowAlbum album) ] [ 
+              R.str album.Name 
+            ] 
+          ]
+      ] ]
   | Genres  -> 
     [ R.h2 [] [ R.str "Browse Genres" ]
       R.p [] [
@@ -71,6 +96,12 @@ let viewMain model dispatch =
           R.li [] [ R.a [ href (Genre genre) ] [ R.str genre ] ]
       ]
     ]
+  | Album _ -> 
+    match model.Album with
+    | Some album -> 
+      [ R.str (album.Name) ]
+    | None ->
+      [ ]
 
 let blank desc url =
   R.a [ Href url; Target "_blank" ] [ R.str desc ]
