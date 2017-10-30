@@ -2,6 +2,7 @@ source https://api.nuget.org/v3/index.json
 
 nuget Fable.Elmish
 nuget Fable.Elmish.React
+nuget Fable.Elmish.Browser
 nuget FSharp.Core
 nuget Suave
 nuget Fable.Core
