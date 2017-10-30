@@ -29,7 +29,7 @@ let getGenres () = promise {
 let init _ = 
   let model =
     { Route  = Home
-      Genres = [ "Rock" ] }
+      Genres = [ ] }
   let cmd = Cmd.ofPromise getGenres () GenresFetched GenresFetchError
   model, cmd
 
@@ -40,12 +40,26 @@ let update msg (model : Model) =
   | GenresFetchError _ ->
     model, Cmd.none
 
+let hash = function
+| Home    -> "#"
+| Genre g -> sprintf "#genre/%s" g
+| Genres  -> "#genres"
+
+let route : Parser<Route -> Route, _> =
+  oneOf [
+    map Home (top)
+    map Genres (s "genres")
+    map Genre  (s "genre" </> str)
+  ]
+
+let href = hash >> Href
+
 let viewMain model dispatch =
   match model.Route with 
   | Home    -> 
     [ R.str "Home"
       R.br []
-      R.a [ Href "#genres" ] [ R.str "Genres" ] ]
+      R.a [ href Genres ] [ R.str "Genres" ] ]
   | Genre g -> [ R.str ("Genre: " + g) ]
   | Genres  -> 
     [ R.h2 [] [ R.str "Browse Genres" ]
@@ -54,16 +68,18 @@ let viewMain model dispatch =
       ]
       R.ul [] [
         for genre in model.Genres ->
-          let url = sprintf "#genre/%s" genre
-          R.li [] [ R.a [ Href url ] [ R.str genre ] ]
+          R.li [] [ R.a [ href (Genre genre) ] [ R.str genre ] ]
       ]
     ]
+
+let blank desc url =
+  R.a [ Href url; Target "_blank" ] [ R.str desc ]
 
 let view model dispatch =
   R.div [] [
     R.div [ Id "header" ] [ 
       R.h1 [] [ 
-        R.a [ Href "#" ] [ R.str "SAFE Music Store" ]
+        R.a [ href Home ] [ R.str "SAFE Music Store" ]
       ]
     ]
 
@@ -71,17 +87,10 @@ let view model dispatch =
 
     R.div [ Id "footer"] [
       R.str "built with "
-      R.a [ Href "http://fsharp.org" ] [ R.str "F#" ]
+      blank "F#" "http://fsharp.org"
       R.str " and "
-      R.a [ Href "http://SAFE-Stack.github.io" ] [ R.str "SAFE Stack" ]
+      blank "SAFE Stack" "http://SAFE-Stack.github.io"
     ]
-  ]
-
-let route : Parser<Route -> Route, _> =
-  oneOf [
-    map Home (top)
-    map Genres (s "genres")
-    map Genre  (s "genre" </> str)
   ]
 
 let urlUpdate (result:Option<Route>) model =
