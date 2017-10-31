@@ -22,9 +22,12 @@ let getGenres =
   |> sprintf "[%s]"
   |> OK
 
+let getAlbum id = OK (sprintf "\"Album number %d\"" id)
+
 let app =
   choose [
     path "/api/genres" >=> getGenres
+    pathScan "/api/album/%d" getAlbum
     Files.browseHome
   ]
 

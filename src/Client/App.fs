@@ -9,6 +9,10 @@ open Fable.Helpers.React.Props
 open Fable.PowerPack
 module R = Fable.Helpers.React
 
+module Map =
+  let join (p:Map<'a,'b>) (q:Map<'a,'b>) = 
+      Map(Seq.concat [ (Map.toSeq p) ; (Map.toSeq q) ])
+
 type Route =
 | Home
 | Genres
@@ -26,23 +30,27 @@ type WebData<'a> =
 type Model = 
   { Route  : Route
     Genres : WebData<string list>
-    Albums : Map<int, Album> }
+    Albums : Map<int, WebData<Album>> }
 
 type Msg =
 | GenresFetched of WebData<string list>
-| AlbumFetched  of WebData<int * Album>
-| RouteChanged  of Route
+| AlbumsFetched of Map<int, WebData<Album>>
 
 let getGenres () = promise {
   let! genres = Fetch.fetchAs<string[]> "/api/genres" []
   return List.ofArray genres
 }
 
+let getAlbum id = promise {
+  let! album = Fetch.fetchAs<string> (sprintf "/api/album/%d" id) []
+  return Map.ofList [id, { Name = album} ]
+}
+
 let init _ = 
   let model =
     { Route  = Home
       Genres = Loading
-      Albums = Map.ofList [ 1, { Name = "Yo!" } ] }
+      Albums = Map.ofList [ 1, Success { Name = "Yo!" } ] }
   let cmd = 
     Cmd.ofPromise getGenres () (Success >> GenresFetched) 
                                (Failure >> GenresFetched)
@@ -68,10 +76,8 @@ let update msg (model : Model) =
   match msg with
   | GenresFetched genres ->
     { model with Genres = genres }, Cmd.none
-  | AlbumFetched (Success (id, album)) ->
-    { model with Albums = Map.add id album model.Albums }, Cmd.none
-  | RouteChanged route ->
-    { model with Route = route }, Navigation.newUrl (hash route)
+  | AlbumsFetched albums ->
+    { model with Albums = Map.join albums model.Albums }, Cmd.none
   | _ ->
     model, Cmd.none
 
@@ -83,16 +89,16 @@ let viewHome = [
   R.a [ href Genres ] [ R.str "Genres" ] 
 ]
 
-let viewGenre genre model dispatch = [
+let viewGenre genre model = [
   R.str ("Genre: " + genre)
   R.ul [] [
     let albums = Map.toList model.Albums
-    for (id,album) in albums ->
-      R.li [] [ 
-        R.button [ onClick dispatch (RouteChanged (Album id)) ] [ 
-          R.str album.Name
-        ] 
-      ]
+    for (id,album) in albums do
+      match album with
+      | Success album ->
+        yield R.li [] [ R.a [ href (Album id) ] [ R.str album.Name ] ]
+      | _ ->
+        ()
   ]
 ]
 
@@ -116,15 +122,17 @@ let viewGenres model =
 
 let viewAlbum id model =
   match Map.tryFind id model.Albums with
-  | Some album -> 
+  | Some (Success album) -> 
     [ R.str (album.Name) ]
-  | None ->
+  | Some (Failure _) ->
+    [ R.str "Cannot download album" ]
+  | _ ->
     [ R.str "Loading..." ]
 
 let viewMain model dispatch =
   match model.Route with 
   | Home        -> viewHome
-  | Genre genre -> viewGenre genre model dispatch
+  | Genre genre -> viewGenre genre model
   | Genres      -> viewGenres model
   | Album id    -> viewAlbum id model
 
@@ -151,6 +159,12 @@ let view model dispatch =
 
 let urlUpdate (result:Option<Route>) model =
   match result with
+  | Some (Album id) when not (Map.containsKey id model.Albums) ->
+    let cmd = 
+      Cmd.ofPromise 
+        getAlbum id (Map.map (fun _ v -> Success v) >> AlbumsFetched) 
+                    (fun exn -> AlbumsFetched (Map.ofList [ id, Failure exn ]))
+    { model with Route = Album id }, cmd
   | Some route -> 
     { model with Route = route }, Cmd.none
   | None ->
