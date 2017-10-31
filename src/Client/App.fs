@@ -16,37 +16,42 @@ type Route =
 | Album of int
 
 type Album =
-  { Id   : int
-    Name : string }
+  { Name : string }
+
+type WebData<'a> =
+| Loading
+| Success of 'a
+| Failure of exn
 
 type Model = 
   { Route  : Route
-    Genres : string list
-    Albums : Album list
-    Album  : Album option }
+    Genres : WebData<string list>
+    Albums : Map<int, Album> }
 
 type Msg =
-| GenresFetched of Result<string [], exn>
-| ShowAlbum of Album
+| GenresFetched of WebData<string list>
+| AlbumFetched  of WebData<int * Album>
+| RouteChanged  of Route
 
 let getGenres () = promise {
-  return! Fetch.fetchAs<string[]> "/api/genres" []
+  let! genres = Fetch.fetchAs<string[]> "/api/genres" []
+  return List.ofArray genres
 }
 
 let init _ = 
   let model =
     { Route  = Home
-      Genres = [ ]
-      Albums = [ { Id = 1; Name = "Yo!" } ]
-      Album  = None }
+      Genres = Loading
+      Albums = Map.ofList [ 1, { Name = "Yo!" } ] }
   let cmd = 
-    Cmd.ofPromise getGenres () (Ok >> GenresFetched) (Error >> GenresFetched)
+    Cmd.ofPromise getGenres () (Success >> GenresFetched) 
+                               (Failure >> GenresFetched)
   model, cmd
 
 let hash = function
-| Home    -> "#"
+| Home    -> sprintf "#"
 | Genre g -> sprintf "#genre/%s" g
-| Genres  -> "#genres"
+| Genres  -> sprintf "#genres"
 | Album a -> sprintf "#album/%d" a
 
 let route : Parser<Route -> Route, _> =
@@ -61,47 +66,67 @@ let href = hash >> Href
 
 let update msg (model : Model) =
   match msg with
-  | GenresFetched (Ok gs) ->
-    { model with Genres = List.ofArray gs }, Cmd.none
-  | GenresFetched (Error _) ->
+  | GenresFetched genres ->
+    { model with Genres = genres }, Cmd.none
+  | AlbumFetched (Success (id, album)) ->
+    { model with Albums = Map.add id album model.Albums }, Cmd.none
+  | RouteChanged route ->
+    { model with Route = route }, Navigation.newUrl (hash route)
+  | _ ->
     model, Cmd.none
-  | ShowAlbum album ->
-    { model with Album = Some album }, Navigation.newUrl (hash (Album album.Id))
 
 let onClick dispatch msg = OnClick (fun _ -> dispatch msg)
 
-let viewMain model dispatch =
-  match model.Route with 
-  | Home    -> 
-    [ R.str "Home"
-      R.br []
-      R.a [ href Genres ] [ R.str "Genres" ] ]
-  | Genre genre -> 
-    [ R.str ("Genre: " + genre)
-      R.ul [] [
-        for album in model.Albums ->
-          R.li [] [ 
-            R.button [ onClick dispatch (ShowAlbum album) ] [ 
-              R.str album.Name 
-            ] 
-          ]
-      ] ]
-  | Genres  -> 
+let viewHome = [ 
+  R.str "Home"
+  R.br []
+  R.a [ href Genres ] [ R.str "Genres" ] 
+]
+
+let viewGenre genre model dispatch = [
+  R.str ("Genre: " + genre)
+  R.ul [] [
+    let albums = Map.toList model.Albums
+    for (id,album) in albums ->
+      R.li [] [ 
+        R.button [ onClick dispatch (RouteChanged (Album id)) ] [ 
+          R.str album.Name
+        ] 
+      ]
+  ]
+]
+
+let viewGenres model =
+  match model.Genres with
+  | Loading ->
+    [ R.str "Loading genres..." ]
+  | Success genres -> 
     [ R.h2 [] [ R.str "Browse Genres" ]
       R.p [] [
-        R.str (sprintf "Select from %d genres:" model.Genres.Length)
+        R.str (sprintf "Select from %d genres:" genres.Length)
       ]
+    
       R.ul [] [
-        for genre in model.Genres ->
+        for genre in genres ->
           R.li [] [ R.a [ href (Genre genre) ] [ R.str genre ] ]
       ]
     ]
-  | Album _ -> 
-    match model.Album with
-    | Some album -> 
-      [ R.str (album.Name) ]
-    | None ->
-      [ ]
+  | Failure _ ->
+    [ R.str "Failed to load genres" ]
+
+let viewAlbum id model =
+  match Map.tryFind id model.Albums with
+  | Some album -> 
+    [ R.str (album.Name) ]
+  | None ->
+    [ R.str "Loading..." ]
+
+let viewMain model dispatch =
+  match model.Route with 
+  | Home        -> viewHome
+  | Genre genre -> viewGenre genre model dispatch
+  | Genres      -> viewGenres model
+  | Album id    -> viewAlbum id model
 
 let blank desc url =
   R.a [ Href url; Target "_blank" ] [ R.str desc ]
