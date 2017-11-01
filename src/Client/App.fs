@@ -103,12 +103,14 @@ let viewGenre genre model = [
       Map.toList model.Albums
       |> List.choose (fun (_,a) -> 
         match a with 
-        | Success a when a.Genre = genre -> Some a
+        | Success a when a.Genre.Name = genre -> Some a
         | _ -> None )
     for album in albums do
       yield R.li [] [ R.a [ href (Album album.Id) ] [ R.str album.Title ] ]
   ]
 ]
+
+let aHref route txt = R.a [ href route ] [ R.str txt ]
 
 let viewGenres model =
   match model.Genres with
@@ -128,10 +130,24 @@ let viewGenres model =
   | Failure _ ->
     [ R.str "Failed to load genres" ]
 
+let labeled caption elem =
+  R.p [] [
+    R.em [] [ R.str caption ]
+    elem
+  ]
+
 let viewAlbum id model =
   match Map.tryFind id model.Albums with
-  | Some (Success album) -> 
-    [ R.str (album.Title) ]
+  | Some (Success album) ->
+    [ R.h2 [] [ R.str (sprintf "%s - %s" album.Artist.Name album.Title) ]
+      R.p [] [ R.img [ Src album.ArtUrl ] ]
+      R.div [ Id "album-details" ] [
+        labeled "Artist: " (R.str album.Artist.Name)
+        labeled "Title: " (R.str album.Title)
+        labeled "Genre: " (aHref (Genre album.Genre.Name) album.Genre.Name)
+        labeled "Price: " ((R.str (album.Price.ToString())))
+      ]
+    ]
   | Some (Failure _) ->
     [ R.str "Cannot download album" ]
   | Some (Loading)

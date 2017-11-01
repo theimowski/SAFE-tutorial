@@ -435,8 +435,8 @@ let albums =
   |> List.mapi (fun i (gid, aid, title, price, art) -> 
       let album =
         { Id       = i
-          Genre    = Map.find gid genres |> fun g -> g.Name 
-          ArtistId = aid
+          Genre    = Map.find gid genres
+          Artist   = Map.find aid artists
           Title    = title
           Price    = price
           ArtUrl   = art}
@@ -461,7 +461,7 @@ let getAlbum id =
 let getAlbumsForGenre genre =
   albums
   |> Seq.map (fun kv -> kv.Value)
-  |> Seq.filter (fun a -> a.Genre = genre)
+  |> Seq.filter (fun a -> a.Genre.Name = genre)
   |> Seq.toArray
   |> ServerCode.FableJson.toJson
   |> OK

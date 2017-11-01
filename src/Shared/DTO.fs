@@ -10,8 +10,8 @@ type Artist =
 
 type Album =
   { Id       : int
-    Genre    : string 
-    ArtistId : int
-    Title    : string 
+    Genre    : Genre
+    Artist   : Artist
+    Title    : string
     Price    : decimal
     ArtUrl   : string }
