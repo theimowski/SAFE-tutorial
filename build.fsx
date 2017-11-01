@@ -67,7 +67,7 @@ Target "Run" (fun () ->
 
 "Clean"
   ==> "InstallDotNetCore"
-  ==> "InstallClient"
+  =?> ("InstallClient", not <| hasBuildParam "skip")
   ==> "Build"
   ==> "Run"
 
