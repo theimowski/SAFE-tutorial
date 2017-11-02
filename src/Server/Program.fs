@@ -464,12 +464,20 @@ let getAlbum id =
     RequestErrors.NOT_FOUND "Album not found"
 
 let getAlbumsForGenre genre =
-  albums
-  |> Seq.map (fun kv -> kv.Value)
-  |> Seq.filter (fun a -> a.Genre.Name = genre)
-  |> Seq.toArray
-  |> ServerCode.FableJson.toJson
-  |> OK
+  let genre =
+    genres
+    |> Seq.tryFind (fun g -> g.Value.Name = genre)
+    |> Option.map (fun kv -> kv.Value)
+  match genre with
+  | Some genre ->
+    albums
+    |> Seq.map (fun kv -> kv.Value)
+    |> Seq.filter (fun a -> a.Genre.Name = genre.Name)
+    |> Seq.toArray
+    |> ServerCode.FableJson.toJson
+    |> OK
+  | None ->
+    RequestErrors.NOT_FOUND "Genre not found"
 
 let app =
   choose [
