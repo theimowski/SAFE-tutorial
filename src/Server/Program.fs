@@ -443,6 +443,11 @@ let albums =
       i + 1, album)
   |> Map.ofList
 
+let OK body : WebPart = fun ctx ->
+  async {
+    do! Async.Sleep 1000
+    return! OK body ctx
+  }
 
 let getGenres = 
   genres

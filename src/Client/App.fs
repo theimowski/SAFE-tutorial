@@ -53,16 +53,6 @@ let getAlbumsForGenre genre = promise {
     |> Map.ofArray
 }
 
-let init _ = 
-  let model =
-    { Route  = Home
-      Genres = Loading
-      Albums = Map.empty }
-  let cmd = 
-    Cmd.ofPromise getGenres () (Success >> GenresFetched) 
-                               (Failure >> GenresFetched)
-  model, cmd
-
 let hash = function
 | Home    -> sprintf "#"
 | Genre g -> sprintf "#genre/%s" g
@@ -77,6 +67,38 @@ let route : Parser<Route -> Route, _> =
     map Album  (s "album" </> i32)
   ]
 
+let routeCmd model = function
+| Genre genre ->
+  Cmd.ofPromise 
+    getAlbumsForGenre 
+    genre 
+    (Map.map (fun _ v -> Success v) >> AlbumsFetched) 
+    (fun _ -> AlbumsFetched Map.empty)
+  |> Some
+| Album id when not (Map.containsKey id model.Albums) ->
+  Cmd.ofPromise 
+    getAlbum 
+    id 
+    (Map.map (fun _ v -> Success v) >> AlbumsFetched) 
+    (fun exn -> AlbumsFetched (Map.ofList [ id, Failure exn ]))
+  |> Some
+| _ ->
+  None
+
+let init route =
+  let route = defaultArg route Home
+  let model =
+    { Route  = route
+      Genres = Loading
+      Albums = Map.empty }
+  let routeCmd = routeCmd model route |> Option.toList
+  let genresCmd = 
+    Cmd.ofPromise getGenres () (Success >> GenresFetched)
+                               (Failure >> GenresFetched)
+  let cmds = List.append routeCmd [ genresCmd ]
+    
+  model, Cmd.batch cmds
+
 let href = hash >> Href
 
 let update msg (model : Model) =
@@ -85,8 +107,6 @@ let update msg (model : Model) =
     { model with Genres = genres }, Cmd.none
   | AlbumsFetched albums ->
     { model with Albums = Map.join albums model.Albums }, Cmd.none
-  | _ ->
-    model, Cmd.none
 
 let onClick dispatch msg = OnClick (fun _ -> dispatch msg)
 
@@ -184,22 +204,12 @@ let view model dispatch =
 
 let urlUpdate (result:Option<Route>) model =
   match result with
-  | Some (Genre genre) ->
+  | Some route ->
     let cmd = 
-      Cmd.ofPromise 
-        getAlbumsForGenre 
-        genre 
-        (Map.map (fun _ v -> Success v) >> AlbumsFetched) 
-        (fun _ -> AlbumsFetched Map.empty)
-    { model with Route = Genre genre }, cmd
-  | Some (Album id) when not (Map.containsKey id model.Albums) ->
-    let cmd = 
-      Cmd.ofPromise 
-        getAlbum id (Map.map (fun _ v -> Success v) >> AlbumsFetched) 
-                    (fun exn -> AlbumsFetched (Map.ofList [ id, Failure exn ]))
-    { model with Route = Album id }, cmd
-  | Some route -> 
-    { model with Route = route }, Cmd.none
+      match routeCmd model route with
+      | Some cmd -> cmd
+      | None -> Cmd.none
+    { model with Route = route }, cmd
   | None ->
     model, Navigation.modifyUrl "#"
 
