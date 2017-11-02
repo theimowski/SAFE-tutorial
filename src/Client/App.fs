@@ -5,9 +5,7 @@ open Elmish.Browser.Navigation
 open Elmish.Browser.UrlParser
 open Elmish.React
 
-open Fable.Helpers.React.Props
 open Fable.PowerPack
-module R = Fable.Helpers.React
 
 open Shared.DTO
 
@@ -94,57 +92,60 @@ let urlUpdate (result:Option<Route>) model =
   | None ->
     model, Navigation.modifyUrl "#"
 
-let href = hash >> Href
+open Fable.Helpers.React
+open Fable.Helpers.React.Props
+
+let aHref txt route = a [ Href (hash route) ] [ str txt ]
+
+let list xs = ul [] [ for (txt, route) in xs -> aHref txt route ]
 
 let viewHome = [ 
-  R.str "Home"
-  R.br []
-  R.a [ href Genres ] [ R.str "Genres" ] 
+  str "Home"
+  br []
+  aHref "Genres" Genres
 ]
 
 let viewGenre genre model = [
-  R.str ("Genre: " + genre)
-  R.ul [] [
-    let albums = Seq.filter (fun a -> a.Genre.Name = genre) model.Albums
-    for album in albums do
-      yield R.li [] [ R.a [ href (Album album.Id) ] [ R.str album.Title ] ]
-  ]
+  str ("Genre: " + genre)
+  
+  model.Albums
+  |> Seq.filter (fun a -> a.Genre.Name = genre)
+  |> Seq.map (fun a -> a.Title, (Album a.Id))
+  |> list
 ]
 
-let aHref route txt = R.a [ href route ] [ R.str txt ]
 
 let viewGenres model = [ 
-  R.h2 [] [ R.str "Browse Genres" ]
-  R.p [] [
-    R.str (sprintf "Select from %d genres:" model.Genres.Length)
+  h2 [] [ str "Browse Genres" ]
+  p [] [
+    str (sprintf "Select from %d genres:" model.Genres.Length)
   ]
 
-  R.ul [] [
-    for genre in model.Genres ->
-      R.li [] [ R.a [ href (Genre genre.Name) ] [ R.str genre.Name ] ]
-  ]
+  model.Genres
+  |> Seq.map (fun g -> g.Name, (Genre g.Name))
+  |> list
 ]
 
 let labeled caption elem =
-  R.p [] [
-    R.em [] [ R.str caption ]
+  p [] [
+    em [] [ str caption ]
     elem
   ]
 
 let viewAlbum id model =
   match Seq.tryFind (fun a -> a.Id = id) model.Albums with
   | Some album ->
-    [ R.h2 [] [ R.str (sprintf "%s - %s" album.Artist.Name album.Title) ]
-      R.p [] [ R.img [ Src album.ArtUrl ] ]
-      R.div [ Id "album-details" ] [
-        labeled "Artist: " (R.str album.Artist.Name)
-        labeled "Title: " (R.str album.Title)
-        labeled "Genre: " (aHref (Genre album.Genre.Name) album.Genre.Name)
-        labeled "Price: " ((R.str (album.Price.ToString())))
+    [ h2 [] [ str (sprintf "%s - %s" album.Artist.Name album.Title) ]
+      p [] [ img [ Src album.ArtUrl ] ]
+      div [ Id "album-details" ] [
+        labeled "Artist: " (str album.Artist.Name)
+        labeled "Title: " (str album.Title)
+        labeled "Genre: " (aHref album.Genre.Name (Genre album.Genre.Name))
+        labeled "Price: " ((str (album.Price.ToString())))
       ]
     ]
   | None ->
-    [ R.str "Loading..." ]
+    [ str "Loading..." ]
 
 let viewMain model dispatch =
   match model.Route with 
@@ -154,22 +155,22 @@ let viewMain model dispatch =
   | Album id    -> viewAlbum id model
 
 let blank desc url =
-  R.a [ Href url; Target "_blank" ] [ R.str desc ]
+  a [ Href url; Target "_blank" ] [ str desc ]
 
 let view model dispatch =
-  R.div [] [
-    R.div [ Id "header" ] [ 
-      R.h1 [] [ 
-        R.a [ href Home ] [ R.str "SAFE Music Store" ]
+  div [] [
+    div [ Id "header" ] [ 
+      h1 [] [
+        aHref "SAFE Music Store" Home
       ]
     ]
 
-    R.div [ Id "main" ] (viewMain model dispatch)
+    div [ Id "main" ] (viewMain model dispatch)
 
-    R.div [ Id "footer"] [
-      R.str "built with "
+    div [ Id "footer"] [
+      str "built with "
       blank "F#" "http://fsharp.org"
-      R.str " and "
+      str " and "
       blank "SAFE Stack" "http://SAFE-Stack.github.io"
     ]
   ]
