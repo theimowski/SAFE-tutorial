@@ -115,14 +115,21 @@ let viewHome = [
   aHref "Genres" Genres
 ]
 
-let viewGenre genre model = [
-  str ("Genre: " + genre)
-  
-  model.Albums
-  |> Seq.filter (fun a -> a.Genre.Name = genre)
-  |> Seq.map (fun a -> a.Title, (Album a.Id))
-  |> list
-]
+let viewGenre genre model = 
+  let albums = 
+    model.Albums 
+    |> Seq.filter (fun a -> a.Genre.Name = genre) 
+    |> Seq.toList
+    
+  match albums with
+  | [] -> [ str "Loading..." ]
+  | albums -> 
+    [ str ("Genre: " + genre)
+      
+      albums
+      |> Seq.map (fun a -> a.Title, (Album a.Id))
+      |> list
+    ]
 
 let viewGenres model = [ 
   h2 [] [ str "Browse Genres" ]
