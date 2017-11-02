@@ -21,43 +21,33 @@ type Route =
 | Genre of string
 | Album of int
 
-type WebData<'a> =
-| Loading
-| Success of 'a
-| Failure of exn
-
 type Model = 
   { Route  : Route
-    Genres : WebData<Genre list>
-    Albums : Map<int, WebData<Album>> }
+    Genres : Genre list
+    Albums : Set<Album> }
 
 type Msg =
-| GenresFetched of WebData<Genre list>
-| AlbumsFetched of Map<int, WebData<Album>>
+| GenresFetched of Result<Genre[], exn>
+| AlbumFetched  of Result<Album, exn>
+| AlbumsFetched of Result<Album[], exn>
 
-let getGenres () = promise {
-  let! genres = Fetch.fetchAs<Genre[]> "/api/genres" []
-  return List.ofArray genres
-}
+let genres () =
+  Fetch.fetchAs<Genre[]> "/api/genres" []
 
-let getAlbum id = promise {
-  let! album = Fetch.fetchAs<Album> (sprintf "/api/album/%d" id) []
-  return Map.ofList [id, album ]
-}
+let album id =
+  Fetch.fetchAs<Album> (sprintf "/api/album/%d" id) []
 
-let getAlbumsForGenre genre = promise {
-  let! albums = Fetch.fetchAs<Album[]> (sprintf "/api/genre/%s/albums" genre) []
-  return 
-    albums
-    |> Array.map (fun a -> a.Id, a)
-    |> Map.ofArray
-}
+let albumsFor genre =
+  Fetch.fetchAs<Album[]> (sprintf "/api/genre/%s/albums" genre) []
+
+let fetch req args f = 
+  Cmd.ofPromise req args (Ok >> f) (Error >> f)
 
 let hash = function
-| Home    -> sprintf "#"
-| Genre g -> sprintf "#genre/%s" g
-| Genres  -> sprintf "#genres"
-| Album a -> sprintf "#album/%d" a
+| Home     -> sprintf "#"
+| Genre g  -> sprintf "#genre/%s" g
+| Genres   -> sprintf "#genres"
+| Album a  -> sprintf "#album/%d" a
 
 let route : Parser<Route -> Route, _> =
   oneOf [
@@ -67,48 +57,44 @@ let route : Parser<Route -> Route, _> =
     map Album  (s "album" </> i32)
   ]
 
-let routeCmd model = function
-| Genre genre ->
-  Cmd.ofPromise 
-    getAlbumsForGenre 
-    genre 
-    (Map.map (fun _ v -> Success v) >> AlbumsFetched) 
-    (fun _ -> AlbumsFetched Map.empty)
-  |> Some
-| Album id when not (Map.containsKey id model.Albums) ->
-  Cmd.ofPromise 
-    getAlbum 
-    id 
-    (Map.map (fun _ v -> Success v) >> AlbumsFetched) 
-    (fun exn -> AlbumsFetched (Map.ofList [ id, Failure exn ]))
-  |> Some
-| _ ->
-  None
+let routeCmd = function
+| Home 
+| Genres      -> fetch genres () GenresFetched
+| Genre genre -> fetch albumsFor genre AlbumsFetched
+| Album id    -> fetch album id AlbumFetched
 
 let init route =
   let route = defaultArg route Home
   let model =
     { Route  = route
-      Genres = Loading
-      Albums = Map.empty }
-  let routeCmd = routeCmd model route |> Option.toList
-  let genresCmd = 
-    Cmd.ofPromise getGenres () (Success >> GenresFetched)
-                               (Failure >> GenresFetched)
-  let cmds = List.append routeCmd [ genresCmd ]
-    
-  model, Cmd.batch cmds
-
-let href = hash >> Href
+      Genres = []
+      Albums = Set.empty }
+  
+  model, routeCmd route
 
 let update msg (model : Model) =
   match msg with
-  | GenresFetched genres ->
-    { model with Genres = genres }, Cmd.none
-  | AlbumsFetched albums ->
-    { model with Albums = Map.join albums model.Albums }, Cmd.none
+  | GenresFetched (Ok genres) ->
+    { model with Genres = List.ofArray genres }, Cmd.none
+  | AlbumFetched (Ok album) ->
+    { model with Albums = Set.add album model.Albums }, Cmd.none
+  | AlbumsFetched (Ok albums) ->
+    let albums' =
+      albums
+      |> Set.ofArray
+      |> Set.union model.Albums
+    { model with Albums = albums' }, Cmd.none
+  | _ ->
+    model, Navigation.modifyUrl "#"
 
-let onClick dispatch msg = OnClick (fun _ -> dispatch msg)
+let urlUpdate (result:Option<Route>) model =
+  match result with
+  | Some route ->
+    { model with Route = route }, routeCmd route
+  | None ->
+    model, Navigation.modifyUrl "#"
+
+let href = hash >> Href
 
 let viewHome = [ 
   R.str "Home"
@@ -119,12 +105,7 @@ let viewHome = [
 let viewGenre genre model = [
   R.str ("Genre: " + genre)
   R.ul [] [
-    let albums = 
-      Map.toList model.Albums
-      |> List.choose (fun (_,a) -> 
-        match a with 
-        | Success a when a.Genre.Name = genre -> Some a
-        | _ -> None )
+    let albums = Seq.filter (fun a -> a.Genre.Name = genre) model.Albums
     for album in albums do
       yield R.li [] [ R.a [ href (Album album.Id) ] [ R.str album.Title ] ]
   ]
@@ -132,23 +113,17 @@ let viewGenre genre model = [
 
 let aHref route txt = R.a [ href route ] [ R.str txt ]
 
-let viewGenres model =
-  match model.Genres with
-  | Loading ->
-    [ R.str "Loading genres..." ]
-  | Success genres -> 
-    [ R.h2 [] [ R.str "Browse Genres" ]
-      R.p [] [
-        R.str (sprintf "Select from %d genres:" genres.Length)
-      ]
-    
-      R.ul [] [
-        for genre in genres ->
-          R.li [] [ R.a [ href (Genre genre.Name) ] [ R.str genre.Name ] ]
-      ]
-    ]
-  | Failure _ ->
-    [ R.str "Failed to load genres" ]
+let viewGenres model = [ 
+  R.h2 [] [ R.str "Browse Genres" ]
+  R.p [] [
+    R.str (sprintf "Select from %d genres:" model.Genres.Length)
+  ]
+
+  R.ul [] [
+    for genre in model.Genres ->
+      R.li [] [ R.a [ href (Genre genre.Name) ] [ R.str genre.Name ] ]
+  ]
+]
 
 let labeled caption elem =
   R.p [] [
@@ -157,8 +132,8 @@ let labeled caption elem =
   ]
 
 let viewAlbum id model =
-  match Map.tryFind id model.Albums with
-  | Some (Success album) ->
+  match Seq.tryFind (fun a -> a.Id = id) model.Albums with
+  | Some album ->
     [ R.h2 [] [ R.str (sprintf "%s - %s" album.Artist.Name album.Title) ]
       R.p [] [ R.img [ Src album.ArtUrl ] ]
       R.div [ Id "album-details" ] [
@@ -168,9 +143,6 @@ let viewAlbum id model =
         labeled "Price: " ((R.str (album.Price.ToString())))
       ]
     ]
-  | Some (Failure _) ->
-    [ R.str "Cannot download album" ]
-  | Some (Loading)
   | None ->
     [ R.str "Loading..." ]
 
@@ -201,17 +173,6 @@ let view model dispatch =
       blank "SAFE Stack" "http://SAFE-Stack.github.io"
     ]
   ]
-
-let urlUpdate (result:Option<Route>) model =
-  match result with
-  | Some route ->
-    let cmd = 
-      match routeCmd model route with
-      | Some cmd -> cmd
-      | None -> Cmd.none
-    { model with Route = route }, cmd
-  | None ->
-    model, Navigation.modifyUrl "#"
 
 Program.mkProgram init update view
 |> Program.toNavigable (parseHash route) urlUpdate
