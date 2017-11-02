@@ -434,7 +434,7 @@ let albums =
   ]
   |> List.mapi (fun i (gid, aid, title, price, art) -> 
       let album =
-        { Id       = i
+        { Id       = i + 1
           Genre    = Map.find gid genres
           Artist   = Map.find aid artists
           Title    = title

@@ -97,7 +97,8 @@ open Fable.Helpers.React.Props
 
 let aHref txt route = a [ Href (hash route) ] [ str txt ]
 
-let list xs = ul [] [ for (txt, route) in xs -> aHref txt route ]
+let list xs = 
+  ul [] [ for (txt, route) in xs -> li [] [ aHref txt route ] ]
 
 let viewHome = [ 
   str "Home"
@@ -113,7 +114,6 @@ let viewGenre genre model = [
   |> Seq.map (fun a -> a.Title, (Album a.Id))
   |> list
 ]
-
 
 let viewGenres model = [ 
   h2 [] [ str "Browse Genres" ]
