@@ -19,34 +19,16 @@ type Route =
 type Model = 
   { Route  : Route
     Genres : Genre list
-    Albums : Set<Album> }
-
-type FetchError<'a> =
-| NotFound of 'a
-| FetchExn of exn
+    Albums : Album list }
 
 type Msg =
-| GenresFetched of Result<Genre[], FetchError<unit>>
-| AlbumFetched  of Result<Album, FetchError<int>>
-| AlbumsFetched of Result<Album[], FetchError<string>>
+| AlbumsFetched of Result<Album[], exn>
 
-let genres () =
-  Fetch.fetchAs<Genre[]> "/api/genres" []
-
-let album id =
-  Fetch.fetchAs<Album> (sprintf "/api/album/%d" id) []
-
-let albumsFor genre =
-  Fetch.fetchAs<Album[]> (sprintf "/api/genre/%s/albums" genre) []
-
-let fetchErr (id : 'a) (e : exn) =
-  if e.Message.ToLower().Contains("not found") then
-    NotFound id
-  else
-    FetchExn e
+let albums () =
+  Fetch.fetchAs<Album[]> "/api/albums" []
 
 let fetch req args f = 
-  Cmd.ofPromise req args (Ok >> f) (fetchErr args >> Error >> f)
+  Cmd.ofPromise req args (Ok >> f) (Error >> f)
 
 let hash = function
 | Home     -> sprintf "#"
@@ -63,41 +45,35 @@ let route : Parser<Route -> Route, _> =
     map Album  (s "album" </> i32)
   ]
 
-let routeCmd = function
-| Home 
-| Genres      -> fetch genres () GenresFetched 
-| Genre genre -> fetch albumsFor genre AlbumsFetched
-| Album id    -> fetch album id AlbumFetched
-| Woops       -> Cmd.none
-
 let init route =
   let route = defaultArg route Home
   let model =
     { Route  = route
       Genres = []
-      Albums = Set.empty }
+      Albums = [] }
   
-  model, routeCmd route
+  model, fetch albums () AlbumsFetched
 
 let urlUpdate (result:Option<Route>) model =
   match result with
   | Some route ->
-    { model with Route = route }, routeCmd route
+    { model with Route = route }, Cmd.none
   | None ->
     { model with Route = Woops }, Navigation.modifyUrl (hash Woops)
 
 let update msg (model : Model) =
   match msg with
-  | GenresFetched (Ok genres) ->
-    { model with Genres = List.ofArray genres }, Cmd.none
-  | AlbumFetched (Ok album) ->
-    { model with Albums = Set.add album model.Albums }, Cmd.none
-  | AlbumFetched (Error (NotFound id)) when model.Route = Album id -> 
-    urlUpdate None model
-  | AlbumsFetched (Ok xs) ->
-    { model with Albums = Set.union model.Albums (Set.ofArray xs) }, Cmd.none
-  | AlbumsFetched (Error (NotFound g)) when model.Route = Genre g ->
-    urlUpdate None model
+  | AlbumsFetched (Ok albums) ->
+    let albums = List.ofArray albums
+    let genres =
+      albums
+      |> List.map (fun a -> a.Genre)
+      |> List.distinct
+    let model =
+      { model with 
+          Albums = albums
+          Genres = genres }
+    model, Cmd.none
   | _ ->
     model, Cmd.none
 
@@ -115,21 +91,17 @@ let viewHome = [
   aHref "Genres" Genres
 ]
 
-let viewGenre genre model = 
-  let albums = 
-    model.Albums 
-    |> Seq.filter (fun a -> a.Genre.Name = genre) 
-    |> Seq.toList
+let viewLoading = [ str "Loading..." ]
+
+let viewGenre (genre : Genre) model = [ 
+  str ("Genre: " + genre.Name)
     
-  match albums with
-  | [] -> [ str "Loading..." ]
-  | albums -> 
-    [ str ("Genre: " + genre)
-      
-      albums
-      |> Seq.map (fun a -> a.Title, (Album a.Id))
-      |> list
-    ]
+  model.Albums 
+  |> Seq.filter (fun a -> a.Genre = genre) 
+  |> Seq.toList
+  |> Seq.map (fun a -> a.Title, (Album a.Id))
+  |> list
+]
 
 let viewGenres model = [ 
   h2 [] [ str "Browse Genres" ]
@@ -148,32 +120,37 @@ let labeled caption elem =
     elem
   ]
 
-let viewAlbum id model =
-  match Seq.tryFind (fun a -> a.Id = id) model.Albums with
-  | Some a ->
-    [ h2 [] [ str (sprintf "%s - %s" a.Artist.Name a.Title) ]
-      p [] [ img [ Src a.ArtUrl ] ]
-      div [ Id "album-details" ] [
-        labeled "Artist: " (str a.Artist.Name)
-        labeled "Title: " (str a.Title)
-        labeled "Genre: " (aHref a.Genre.Name (Genre a.Genre.Name))
-        labeled "Price: " ((str (a.Price.ToString())))
-      ]
-    ]
-  | None ->
-    [ str "Loading..." ]
+let viewAlbum a model = [
+  h2 [] [ str (sprintf "%s - %s" a.Artist.Name a.Title) ]
+  p [] [ img [ Src a.ArtUrl ] ]
+  div [ Id "album-details" ] [
+    labeled "Artist: " (str a.Artist.Name)
+    labeled "Title: " (str a.Title)
+    labeled "Genre: " (aHref a.Genre.Name (Genre a.Genre.Name))
+    labeled "Price: " ((str (a.Price.ToString())))
+  ]
+]
 
 let viewNotFound = [
   str "Woops... requested resource was not found."
 ]
 
 let viewMain model dispatch =
-  match model.Route with 
-  | Home        -> viewHome
-  | Genre genre -> viewGenre genre model
-  | Genres      -> viewGenres model
-  | Album id    -> viewAlbum id model
-  | Woops    -> viewNotFound
+  if List.isEmpty model.Albums then 
+    viewLoading
+  else
+    match model.Route with 
+    | Home        -> viewHome
+    | Genres      -> viewGenres model
+    | Woops       -> viewNotFound
+    | Genre genre ->
+      match model.Genres |> List.tryFind (fun g -> g.Name = genre) with
+      | Some genre -> viewGenre genre model
+      | None       -> viewNotFound
+    | Album id    ->
+      match model.Albums |> List.tryFind (fun a -> a.Id = id) with
+      | Some album -> viewAlbum album model
+      | None       -> viewNotFound
 
 let blank desc url =
   a [ Href url; Target "_blank" ] [ str desc ]

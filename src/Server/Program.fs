@@ -479,8 +479,16 @@ let getAlbumsForGenre genre =
   | None ->
     RequestErrors.NOT_FOUND "Genre not found"
 
+let getAlbums =
+  albums
+  |> Seq.map (fun kv -> kv.Value)
+  |> Seq.toArray
+  |> ServerCode.FableJson.toJson
+  |> OK
+
 let app =
   choose [
+    path "/api/albums" >=> getAlbums
     path "/api/genres" >=> getGenres
     pathScan "/api/album/%d" getAlbum
     pathScan "/api/genre/%s/albums" getAlbumsForGenre
