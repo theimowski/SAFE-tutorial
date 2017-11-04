@@ -41,6 +41,7 @@ type Model =
 
 type Msg =
 | AlbumsFetched of Result<Album[], exn>
+| DeleteAlbum of int
 
 let albums () =
   Fetch.fetchAs<Album[]> "/api/albums" []
@@ -77,8 +78,11 @@ let update msg (model : Model) =
           Albums = albums
           Genres = genres }
     model, Cmd.none
-  | _ ->
+  | AlbumsFetched (Error _) ->
     model, Cmd.none
+  | DeleteAlbum id ->
+    let albums = List.filter (fun a -> a.Id <> id) model.Albums
+    { model with Albums = albums }, Cmd.none
 
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
@@ -142,7 +146,9 @@ let truncate k (s : string) =
 let thStr s = th [] [ str s ]
 let tdStr s = td [] [ str s ]
 
-let viewManage model = [
+let onClick dispatch msg = OnClick (fun _ ->  dispatch msg)
+
+let viewManage model dispatch = [
   h2 [] [ str "Index" ]
   table [] [
     yield tr [] [
@@ -150,6 +156,7 @@ let viewManage model = [
       thStr "Title"
       thStr "Genre"
       thStr "Price"
+      thStr "Action"
     ]
 
     for album in model.Albums |> List.sortBy (fun a -> a.Artist.Name) do
@@ -158,6 +165,11 @@ let viewManage model = [
       tdStr (truncate 25 album.Title)
       tdStr album.Genre.Name
       tdStr (string album.Price)
+      td [ ] [ 
+        a [ onClick dispatch (DeleteAlbum album.Id) ] [ 
+          str "Delete"
+        ]
+      ]
     ]
   ]
 ]
@@ -173,7 +185,7 @@ let viewMain model dispatch =
     match model.Route with 
     | Home        -> viewHome
     | Genres      -> viewGenres model
-    | Manage      -> viewManage model
+    | Manage      -> viewManage model dispatch
     | Woops       -> viewNotFound
     | Genre genre ->
       match model.Genres |> List.tryFind (fun g -> g.Name = genre) with
