@@ -16,6 +16,7 @@ type Route =
 | Genre of string
 | Album of int
 | Manage
+| NewAlbum
 | Woops
 
 let hash = function
@@ -24,21 +25,24 @@ let hash = function
 | Genres   -> sprintf "#genres"
 | Album a  -> sprintf "#album/%d" a
 | Manage   -> sprintf "#manage"
+| NewAlbum -> sprintf "#albums/new"
 | Woops    -> sprintf "#notfound"
 
 let route : Parser<Route -> Route, _> =
   oneOf [
-    map Home (top)
-    map Genres (s "genres")
-    map Genre  (s "genre" </> str)
-    map Album  (s "album" </> i32)
-    map Manage (s "manage")
+    map Home     (top)
+    map Genres   (s "genres")
+    map Genre    (s "genre" </> str)
+    map Album    (s "album" </> i32)
+    map NewAlbum (s "albums" </> s "new")
+    map Manage   (s "manage")
   ]
 
 type Model = 
-  { Route  : Route
-    Genres : Genre list
-    Albums : Album list }
+  { Route   : Route
+    Genres  : Genre list
+    Artists : Artist list
+    Albums  : Album list }
 
 type Msg =
 | AlbumsFetched of Result<Album[], exn>
@@ -57,9 +61,10 @@ let promise req args f =
 let init route =
   let route = defaultArg route Home
   let model =
-    { Route  = route
-      Genres = []
-      Albums = [] }
+    { Route   = route
+      Artists = []
+      Genres  = []
+      Albums  = [] }
   
   model, promise albums () AlbumsFetched
 
@@ -78,10 +83,15 @@ let update msg (model : Model) =
       albums
       |> List.map (fun a -> a.Genre)
       |> List.distinct
+    let artists =
+      albums
+      |> List.map (fun a -> a.Artist)
+      |> List.distinct
     let model =
       { model with 
-          Albums = albums
-          Genres = genres }
+          Albums  = albums
+          Genres  = genres
+          Artists = artists }
     model, Cmd.none
   | AlbumsFetched (Error _)
   | AlbumDeleted _ ->
@@ -160,6 +170,7 @@ let onClick dispatch msg = OnClick (fun _ ->  dispatch msg)
 
 let viewManage model dispatch = [
   h2 [] [ str "Index" ]
+  p [] [ aHref "Create new" NewAlbum ]
   table [] [
     thead [] [
       tr [] [
@@ -188,6 +199,43 @@ let viewManage model dispatch = [
   ]
 ]
 
+let formLbl label = div [ ClassName "editor-label" ] [ str label ]
+let formFld field = div [ ClassName "editor-field" ] [ field ]
+let selectInput name options = 
+  let options =
+    options
+    |> List.map (fun (v,txt) -> option [Value v] [str txt])
+  select [Name name] options
+
+let viewNewAlbum model = 
+  let genres = 
+    model.Genres 
+    |> List.map (fun g -> string g.Id, g.Name)
+    |> List.sortBy snd
+  let artists = 
+    model.Artists 
+    |> List.map (fun a -> string a.Id, a.Name)
+    |> List.sortBy snd
+  [
+  h2 [] [ str "Create" ]
+  form [ Action "/api/albums"; Method "POST"; Target "_blank" ] [
+    fieldset [] [
+      legend [] [ str "Album" ]
+      formLbl "Genre"
+      formFld (selectInput "Genre" genres)
+      formLbl "Artist"
+      formFld (selectInput "Artist" artists)
+      formLbl "Title"
+      formFld (input [Name "Title"; Type "text"])
+      formLbl "Price"
+      formFld (input [Name "Price"; Type "number"])
+    ]
+    input [ Type "submit"; Value "Create" ]
+  ]
+  br []
+  div [] [ aHref "Back to list" Manage ]
+]
+
 let viewNotFound = [
   str "Woops... requested resource was not found."
 ]
@@ -200,6 +248,7 @@ let viewMain model dispatch =
     | Home        -> viewHome
     | Genres      -> viewGenres model
     | Manage      -> viewManage model dispatch
+    | NewAlbum    -> viewNewAlbum model
     | Woops       -> viewNotFound
     | Genre genre ->
       match model.Genres |> List.tryFind (fun g -> g.Name = genre) with

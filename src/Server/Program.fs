@@ -487,6 +487,14 @@ let getAlbums =
     |> ServerCode.FableJson.toJson
     |> OK)
 
+let addAlbum = OK ""
+
+let albumsApi =
+  choose [
+    GET >=> getAlbums
+    POST >=> addAlbum
+  ]
+
 let deleteAlbum id =
   albums <- Map.remove id albums
   OK ""
