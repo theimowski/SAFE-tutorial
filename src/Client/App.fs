@@ -14,7 +14,25 @@ type Route =
 | Genres
 | Genre of string
 | Album of int
+| Manage
 | Woops
+
+let hash = function
+| Home     -> sprintf "#"
+| Genre g  -> sprintf "#genre/%s" g
+| Genres   -> sprintf "#genres"
+| Album a  -> sprintf "#album/%d" a
+| Manage   -> sprintf "#manage"
+| Woops    -> sprintf "#notfound"
+
+let route : Parser<Route -> Route, _> =
+  oneOf [
+    map Home (top)
+    map Genres (s "genres")
+    map Genre  (s "genre" </> str)
+    map Album  (s "album" </> i32)
+    map Manage (s "manage")
+  ]
 
 type Model = 
   { Route  : Route
@@ -29,21 +47,6 @@ let albums () =
 
 let fetch req args f = 
   Cmd.ofPromise req args (Ok >> f) (Error >> f)
-
-let hash = function
-| Home     -> sprintf "#"
-| Genre g  -> sprintf "#genre/%s" g
-| Genres   -> sprintf "#genres"
-| Album a  -> sprintf "#album/%d" a
-| Woops    -> sprintf "#notfound"
-
-let route : Parser<Route -> Route, _> =
-  oneOf [
-    map Home (top)
-    map Genres (s "genres")
-    map Genre  (s "genre" </> str)
-    map Album  (s "album" </> i32)
-  ]
 
 let init route =
   let route = defaultArg route Home
@@ -131,6 +134,34 @@ let viewAlbum a model = [
   ]
 ]
 
+let truncate k (s : string) =
+  if s.Length > k then
+    s.Substring(0, k - 3) + "..."
+  else s
+
+let thStr s = th [] [ str s ]
+let tdStr s = td [] [ str s ]
+
+let viewManage model = [
+  h2 [] [ str "Index" ]
+  table [] [
+    yield tr [] [
+      thStr "Artist"
+      thStr "Title"
+      thStr "Genre"
+      thStr "Price"
+    ]
+
+    for album in model.Albums |> List.sortBy (fun a -> a.Artist.Name) do
+    yield tr [] [
+      tdStr (truncate 25 album.Artist.Name)
+      tdStr (truncate 25 album.Title)
+      tdStr album.Genre.Name
+      tdStr (string album.Price)
+    ]
+  ]
+]
+
 let viewNotFound = [
   str "Woops... requested resource was not found."
 ]
@@ -142,6 +173,7 @@ let viewMain model dispatch =
     match model.Route with 
     | Home        -> viewHome
     | Genres      -> viewGenres model
+    | Manage      -> viewManage model
     | Woops       -> viewNotFound
     | Genre genre ->
       match model.Genres |> List.tryFind (fun g -> g.Name = genre) with
