@@ -6,6 +6,7 @@ open Elmish.Browser.UrlParser
 open Elmish.React
 
 open Fable.PowerPack
+open Fable.PowerPack.Fetch
 
 open Shared.DTO
 
@@ -41,12 +42,16 @@ type Model =
 
 type Msg =
 | AlbumsFetched of Result<Album[], exn>
+| AlbumDeleted of Result<Response, exn>
 | DeleteAlbum of Album
 
 let albums () =
-  Fetch.fetchAs<Album[]> "/api/albums" []
+  fetchAs<Album[]> "/api/albums" []
 
-let fetch req args f = 
+let delete album =
+  fetch (sprintf "/api/album/%d" album.Id) [Method HttpMethod.DELETE]
+
+let promise req args f = 
   Cmd.ofPromise req args (Ok >> f) (Error >> f)
 
 let init route =
@@ -56,7 +61,7 @@ let init route =
       Genres = []
       Albums = [] }
   
-  model, fetch albums () AlbumsFetched
+  model, promise albums () AlbumsFetched
 
 let urlUpdate (result:Option<Route>) model =
   match result with
@@ -78,13 +83,14 @@ let update msg (model : Model) =
           Albums = albums
           Genres = genres }
     model, Cmd.none
-  | AlbumsFetched (Error _) ->
+  | AlbumsFetched (Error _)
+  | AlbumDeleted _ ->
     model, Cmd.none
   | DeleteAlbum album ->
     let msg = sprintf "Confirm delete album '%s'?" album.Title
     if Fable.Import.Browser.window.confirm msg then
       let albums = List.filter (fun a -> a.Id <> album.Id) model.Albums
-      { model with Albums = albums }, Cmd.none
+      { model with Albums = albums }, promise delete album AlbumDeleted
     else
       model, Cmd.none
 
@@ -173,7 +179,7 @@ let viewManage model dispatch = [
         tdStr album.Genre.Name
         tdStr (string album.Price)
         td [ ] [ 
-          a [ onClick dispatch (DeleteAlbum album) ] [ 
+          a [ Href (hash Manage); onClick dispatch (DeleteAlbum album) ] [ 
             str "Delete"
           ]
         ]

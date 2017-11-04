@@ -184,7 +184,7 @@ let artists : Map<int, Artist> =
   |> List.map (fun (k, v) -> k, { Artist.Id = k; Name = v })
   |> Map.ofList
 
-let albums =
+let mutable albums =
   [ 1, 1, "For Those About To Rock We Salute You", 8.99M, "/placeholder.gif"
     1, 1, "Let There Be Rock", 8.99M, "/placeholder.gif"
     1, 100, "Greatest Hits", 8.99M, "/placeholder.gif"
@@ -479,16 +479,28 @@ let getAlbumsForGenre genre =
   | None ->
     RequestErrors.NOT_FOUND "Genre not found"
 
-let getAlbums =
-  albums
-  |> Seq.map (fun kv -> kv.Value)
-  |> Seq.toArray
-  |> ServerCode.FableJson.toJson
-  |> OK
+let getAlbums = 
+  warbler (fun _ ->
+    albums
+    |> Seq.map (fun kv -> kv.Value)
+    |> Seq.toArray
+    |> ServerCode.FableJson.toJson
+    |> OK)
+
+let deleteAlbum id =
+  albums <- Map.remove id albums
+  OK ""
+
+let album id =
+  choose [
+    DELETE >=> deleteAlbum id
+  ]
 
 let app =
   choose [
     path "/api/albums" >=> getAlbums
+    pathScan "/api/album/%d" album
+
     path "/api/genres" >=> getGenres
     pathScan "/api/album/%d" getAlbum
     pathScan "/api/genre/%s/albums" getAlbumsForGenre
