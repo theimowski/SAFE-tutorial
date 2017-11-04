@@ -41,7 +41,7 @@ type Model =
 
 type Msg =
 | AlbumsFetched of Result<Album[], exn>
-| DeleteAlbum of int
+| DeleteAlbum of Album
 
 let albums () =
   Fetch.fetchAs<Album[]> "/api/albums" []
@@ -80,9 +80,13 @@ let update msg (model : Model) =
     model, Cmd.none
   | AlbumsFetched (Error _) ->
     model, Cmd.none
-  | DeleteAlbum id ->
-    let albums = List.filter (fun a -> a.Id <> id) model.Albums
-    { model with Albums = albums }, Cmd.none
+  | DeleteAlbum album ->
+    let msg = sprintf "Confirm delete album '%s'?" album.Title
+    if Fable.Import.Browser.window.confirm msg then
+      let albums = List.filter (fun a -> a.Id <> album.Id) model.Albums
+      { model with Albums = albums }, Cmd.none
+    else
+      model, Cmd.none
 
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
@@ -151,23 +155,27 @@ let onClick dispatch msg = OnClick (fun _ ->  dispatch msg)
 let viewManage model dispatch = [
   h2 [] [ str "Index" ]
   table [] [
-    yield tr [] [
-      thStr "Artist"
-      thStr "Title"
-      thStr "Genre"
-      thStr "Price"
-      thStr "Action"
+    thead [] [
+      tr [] [
+        thStr "Artist"
+        thStr "Title"
+        thStr "Genre"
+        thStr "Price"
+        thStr "Action"
+      ]
     ]
-
-    for album in model.Albums |> List.sortBy (fun a -> a.Artist.Name) do
-    yield tr [] [
-      tdStr (truncate 25 album.Artist.Name)
-      tdStr (truncate 25 album.Title)
-      tdStr album.Genre.Name
-      tdStr (string album.Price)
-      td [ ] [ 
-        a [ onClick dispatch (DeleteAlbum album.Id) ] [ 
-          str "Delete"
+    
+    tbody [] [
+      for album in model.Albums |> List.sortBy (fun a -> a.Artist.Name) do
+      yield tr [] [
+        tdStr (truncate 25 album.Artist.Name)
+        tdStr (truncate 25 album.Title)
+        tdStr album.Genre.Name
+        tdStr (string album.Price)
+        td [ ] [ 
+          a [ onClick dispatch (DeleteAlbum album) ] [ 
+            str "Delete"
+          ]
         ]
       ]
     ]
