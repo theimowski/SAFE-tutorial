@@ -10,3 +10,6 @@ let aHref txt route = a [ Href (hash route) ] [ str txt ]
 let thStr s = th [] [ str s ]
 
 let tdStr s = td [] [ str s ]
+
+let list xs = 
+  ul [] [ for (txt, route) in xs -> li [] [ aHref txt route ] ]

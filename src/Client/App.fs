@@ -73,97 +73,7 @@ let update msg (model : Model) =
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
 
-
-let list xs = 
-  ul [] [ for (txt, route) in xs -> li [] [ aHref txt route ] ]
-
-let viewHome = [ 
-  str "Home"
-  br []
-  aHref "Genres" Genres
-]
-
 let viewLoading = [ str "Loading..." ]
-
-let viewGenre (genre : Genre) model = [ 
-  str ("Genre: " + genre.Name)
-    
-  model.Albums 
-  |> Seq.filter (fun a -> a.Genre = genre) 
-  |> Seq.toList
-  |> Seq.map (fun a -> a.Title, (Album a.Id))
-  |> list
-]
-
-let viewGenres model = [ 
-  h2 [] [ str "Browse Genres" ]
-  p [] [
-    str (sprintf "Select from %d genres:" model.Genres.Length)
-  ]
-
-  model.Genres
-  |> Seq.map (fun g -> g.Name, (Genre g.Name))
-  |> list
-]
-
-let labeled caption elem =
-  p [] [
-    em [] [ str caption ]
-    elem
-  ]
-
-let viewAlbum a model = [
-  h2 [] [ str (sprintf "%s - %s" a.Artist.Name a.Title) ]
-  p [] [ img [ Src a.ArtUrl ] ]
-  div [ Id "album-details" ] [
-    labeled "Artist: " (str a.Artist.Name)
-    labeled "Title: " (str a.Title)
-    labeled "Genre: " (aHref a.Genre.Name (Genre a.Genre.Name))
-    labeled "Price: " ((str (a.Price.ToString())))
-  ]
-]
-
-
-
-let onClick dispatch msg = OnClick (fun _ ->  dispatch msg)
-
-let formLbl label = div [ ClassName "editor-label" ] [ str label ]
-let formFld field = div [ ClassName "editor-field" ] [ field ]
-let selectInput name options = 
-  let options =
-    options
-    |> List.map (fun (v,txt) -> option [Value v] [str txt])
-  select [Name name] options
-
-let viewNewAlbum model = 
-  let genres = 
-    model.Genres 
-    |> List.map (fun g -> string g.Id, g.Name)
-    |> List.sortBy snd
-  let artists = 
-    model.Artists 
-    |> List.map (fun a -> string a.Id, a.Name)
-    |> List.sortBy snd
-  [
-  h2 [] [ str "Create" ]
-  form [ ] [
-    fieldset [] [
-      legend [] [ str "Album" ]
-      formLbl "Genre"
-      formFld (selectInput "Genre" genres)
-      formLbl "Artist"
-      formFld (selectInput "Artist" artists)
-      formLbl "Title"
-      formFld (input [Name "Title"; Type "text"])
-      formLbl "Price"
-      formFld (input [Name "Price"; Type "number"])
-    ]
-  ]
-  button [ ClassName "button" ] [ str "Create" ]
-  br []
-  br []
-  div [] [ aHref "Back to list" Manage ]
-]
 
 let viewNotFound = [
   str "Woops... requested resource was not found."
@@ -174,18 +84,18 @@ let viewMain model dispatch =
     viewLoading
   else
     match model.Route with 
-    | Home        -> viewHome
-    | Genres      -> viewGenres model
+    | Home        -> Home.view
+    | Genres      -> Genres.view model
     | Manage      -> Manage.view model (ManageMsg >> dispatch)
-    | NewAlbum    -> viewNewAlbum model
+    | NewAlbum    -> NewAlbum.view model
     | Woops       -> viewNotFound
     | Genre genre ->
       match model.Genres |> List.tryFind (fun g -> g.Name = genre) with
-      | Some genre -> viewGenre genre model
+      | Some genre -> Genre.view genre model
       | None       -> viewNotFound
     | Album id    ->
       match model.Albums |> List.tryFind (fun a -> a.Id = id) with
-      | Some album -> viewAlbum album model
+      | Some album -> Album.view album model
       | None       -> viewNotFound
 
 let blank desc url =
