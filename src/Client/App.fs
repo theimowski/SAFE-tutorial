@@ -4,9 +4,7 @@ open Elmish
 open Elmish.Browser.Navigation
 open Elmish.React
 
-open Fable.PowerPack
-open Fable.PowerPack.Fetch
-
+open MusicStore.Api
 open MusicStore.DTO
 open MusicStore.Model
 open MusicStore.Navigation
@@ -14,25 +12,19 @@ open MusicStore.View
 
 type Msg =
 | AlbumsFetched of Result<Album[], exn>
-| AlbumDeleted of Result<int, exn>
 | ManageMsg of Manage.Msg
-
-let albums () =
-  fetchAs<Album[]> "/api/albums" []
-
-let delete album =
-  fetchAs<int> (sprintf "/api/album/%d" album.Id) [Method HttpMethod.DELETE]
-
-let promise req args f = 
-  Cmd.ofPromise req args (Ok >> f) (Error >> f)
+| NewAlbumMsg of NewAlbum.Msg
+| EditAlbumMsg of EditAlbum.Msg
 
 let init route =
   let route = defaultArg route Home
   let model =
-    { Route   = route
-      Artists = []
-      Genres  = []
-      Albums  = [] }
+    { Route     = route
+      Artists   = []
+      Genres    = []
+      Albums    = []
+      NewAlbum  = NewAlbum.init ()
+      EditAlbum = None }
   
   model, promise albums () AlbumsFetched
 
@@ -55,20 +47,28 @@ let update msg (model : Model) =
       albums
       |> List.map (fun a -> a.Artist)
       |> List.distinct
+    let newAlbum = 
+      { model.NewAlbum with
+          Genre  = genres.[0].Id
+          Artist = artists.[0].Id }
     let model =
-      { model with 
-          Albums  = albums
-          Genres  = genres
-          Artists = artists }
+      { model with
+          NewAlbum = newAlbum
+          Albums   = albums
+          Genres   = genres
+          Artists  = artists }
     model, Cmd.none
-  | AlbumsFetched (Error _)
-  | AlbumDeleted  (Error _) ->
+  | AlbumsFetched (Error _) ->
     model, Cmd.none
-  | AlbumDeleted (Ok id) ->
-    let albums = List.filter (fun a -> a.Id <> id) model.Albums
-    { model with Albums = albums }, Cmd.none
-  | ManageMsg (Manage.DeleteAlbum album) ->
-    model, promise delete album AlbumDeleted
+  | ManageMsg msg ->
+    let m, msg = Manage.update msg model
+    m, Cmd.map ManageMsg msg
+  | NewAlbumMsg msg ->
+    let m, msg = NewAlbum.update msg model
+    m, Cmd.map NewAlbumMsg msg
+  | EditAlbumMsg msg ->
+    let m, msg = EditAlbum.update msg model
+    m, Cmd.map EditAlbumMsg msg
 
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
@@ -87,7 +87,7 @@ let viewMain model dispatch =
     | Home        -> Home.view
     | Genres      -> Genres.view model
     | Manage      -> Manage.view model (ManageMsg >> dispatch)
-    | NewAlbum    -> NewAlbum.view model
+    | NewAlbum    -> NewAlbum.view model (NewAlbumMsg >> dispatch)
     | Woops       -> viewNotFound
     | Genre genre ->
       match model.Genres |> List.tryFind (fun g -> g.Name = genre) with
@@ -96,6 +96,10 @@ let viewMain model dispatch =
     | Album id    ->
       match model.Albums |> List.tryFind (fun a -> a.Id = id) with
       | Some album -> Album.view album model
+      | None       -> viewNotFound
+    | EditAlbum id ->
+      match model.Albums |> List.tryFind (fun a -> a.Id = id) with
+      | Some album -> EditAlbum.view album model (EditAlbumMsg >> dispatch)
       | None       -> viewNotFound
 
 let blank desc url =

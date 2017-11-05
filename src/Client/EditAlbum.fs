@@ -1,4 +1,4 @@
-module MusicStore.NewAlbum
+module MusicStore.EditAlbum
 
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
@@ -13,37 +13,28 @@ open MusicStore.Model
 open MusicStore.Navigation
 open MusicStore.View
 
-let init () : Form.NewAlbum =
-  { Genre  = 0
-    Artist = 0
-    Title  = ""
-    Price  = 0.0M }
-
 type Msg =
 | Genre        of int
 | Artist       of int
 | Title        of string
 | Price        of decimal
-| NewAlbum     of Form.NewAlbum
-| AlbumCreated of Result<Album, exn>
+
+let init (album : Album) =
+  { Form.EditAlbum.Id = album.Id 
+    Form.EditAlbum.Genre = album.Genre.Id
+    Form.EditAlbum.Artist = album.Artist.Id
+    Form.EditAlbum.Title = album.Title
+    Form.EditAlbum.Price = album.Price }
 
 let update msg model =
-  let set newAlbum = { model with NewAlbum = newAlbum }
+  let set editAlbum = { model with EditAlbum = Some editAlbum }
   match msg with 
-  | Genre  id  -> set { model.NewAlbum with Genre = id }, Cmd.none
-  | Artist id  -> set { model.NewAlbum with Artist = id }, Cmd.none
-  | Title t    -> set { model.NewAlbum with Title = t }, Cmd.none
-  | Price p    -> set { model.NewAlbum with Price = p }, Cmd.none
-  | NewAlbum a -> 
-    let cmd = 
-      Cmd.batch [ promise create a AlbumCreated 
-                  redirect Manage]
-    model, cmd
-  | AlbumCreated (Ok album) -> 
-    { model with Albums = album :: model.Albums }, Cmd.none
-  | AlbumCreated _ -> model, Cmd.none
+  | Genre  id  -> set { model.EditAlbum with Genre = id }, Cmd.none
+  | Artist id  -> set { model.EditAlbum with Artist = id }, Cmd.none
+  | Title t    -> set { model.EditAlbum with Title = t }, Cmd.none
+  | Price p    -> set { model.EditAlbum with Price = p }, Cmd.none
 
-let view model dispatch = 
+let view album model dispatch = 
   let genres = 
     model.Genres 
     |> List.map (fun g -> string g.Id, g.Name)
@@ -53,7 +44,7 @@ let view model dispatch =
     |> List.map (fun a -> string a.Id, a.Name)
     |> List.sortBy snd
   [
-  h2 [] [ str "Create" ]
+  h2 [] [ str "Edit" ]
   form [ ] [
     fieldset [] [
       legend [] [ str "Album" ]
@@ -83,7 +74,7 @@ let view model dispatch =
                 onInput (decimal >> Price >> dispatch)])
     ]
   ]
-  button [ ClassName "button"; onClick dispatch (NewAlbum model.NewAlbum) ] [ str "Create" ]
+  button [ ClassName "button"; onClick dispatch (EditAlbum model.NewAlbum) ] [ str "Create" ]
   br []
   br []
   div [] [ aHref "Back to list" Manage ]
