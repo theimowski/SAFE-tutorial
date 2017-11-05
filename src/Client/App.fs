@@ -1,53 +1,21 @@
-module App
+module MusicStore.App
 
 open Elmish
 open Elmish.Browser.Navigation
-open Elmish.Browser.UrlParser
 open Elmish.React
 
 open Fable.PowerPack
 open Fable.PowerPack.Fetch
 
-open Shared.DTO
-
-type Route =
-| Home
-| Genres
-| Genre of string
-| Album of int
-| Manage
-| NewAlbum
-| Woops
-
-let hash = function
-| Home     -> sprintf "#"
-| Genre g  -> sprintf "#genre/%s" g
-| Genres   -> sprintf "#genres"
-| Album a  -> sprintf "#album/%d" a
-| Manage   -> sprintf "#manage"
-| NewAlbum -> sprintf "#albums/new"
-| Woops    -> sprintf "#notfound"
-
-let route : Parser<Route -> Route, _> =
-  oneOf [
-    map Home     (top)
-    map Genres   (s "genres")
-    map Genre    (s "genre" </> str)
-    map Album    (s "album" </> i32)
-    map NewAlbum (s "albums" </> s "new")
-    map Manage   (s "manage")
-  ]
-
-type Model = 
-  { Route   : Route
-    Genres  : Genre list
-    Artists : Artist list
-    Albums  : Album list }
+open MusicStore.DTO
+open MusicStore.Model
+open MusicStore.Navigation
+open MusicStore.View
 
 type Msg =
 | AlbumsFetched of Result<Album[], exn>
 | AlbumDeleted of Result<int, exn>
-| DeleteAlbum of Album
+| ManageMsg of Manage.Msg
 
 let albums () =
   fetchAs<Album[]> "/api/albums" []
@@ -99,13 +67,12 @@ let update msg (model : Model) =
   | AlbumDeleted (Ok id) ->
     let albums = List.filter (fun a -> a.Id <> id) model.Albums
     { model with Albums = albums }, Cmd.none
-  | DeleteAlbum album ->
+  | ManageMsg (Manage.DeleteAlbum album) ->
     model, promise delete album AlbumDeleted
 
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
 
-let aHref txt route = a [ Href (hash route) ] [ str txt ]
 
 let list xs = 
   ul [] [ for (txt, route) in xs -> li [] [ aHref txt route ] ]
@@ -156,52 +123,9 @@ let viewAlbum a model = [
   ]
 ]
 
-let truncate k (s : string) =
-  if s.Length > k then
-    s.Substring(0, k - 3) + "..."
-  else s
 
-let thStr s = th [] [ str s ]
-let tdStr s = td [] [ str s ]
 
 let onClick dispatch msg = OnClick (fun _ ->  dispatch msg)
-
-let deleteAblum album dispatch =
-  let msg = sprintf "Confirm delete album '%s'?" album.Title
-  if Fable.Import.Browser.window.confirm msg then
-    dispatch (DeleteAlbum album)
-
-let viewManage model dispatch = [
-  h2 [] [ str "Index" ]
-  p [] [ aHref "Create new" NewAlbum ]
-  table [] [
-    thead [] [
-      tr [] [
-        thStr "Artist"
-        thStr "Title"
-        thStr "Genre"
-        thStr "Price"
-        thStr "Action"
-      ]
-    ]
-    
-    tbody [] [
-      for album in model.Albums |> List.sortBy (fun a -> a.Artist.Name) do
-      yield tr [] [
-        tdStr (truncate 25 album.Artist.Name)
-        tdStr (truncate 25 album.Title)
-        tdStr album.Genre.Name
-        tdStr (string album.Price)
-        td [ ] [ 
-          a [ Href (hash Manage)
-              OnClick (fun _ -> deleteAblum album dispatch) ] [ 
-            str "Delete"
-          ]
-        ]
-      ]
-    ]
-  ]
-]
 
 let formLbl label = div [ ClassName "editor-label" ] [ str label ]
 let formFld field = div [ ClassName "editor-field" ] [ field ]
@@ -252,7 +176,7 @@ let viewMain model dispatch =
     match model.Route with 
     | Home        -> viewHome
     | Genres      -> viewGenres model
-    | Manage      -> viewManage model dispatch
+    | Manage      -> Manage.view model (ManageMsg >> dispatch)
     | NewAlbum    -> viewNewAlbum model
     | Woops       -> viewNotFound
     | Genre genre ->
@@ -286,6 +210,6 @@ let view model dispatch =
   ]
 
 Program.mkProgram init update view
-|> Program.toNavigable (parseHash route) urlUpdate
+|> Program.toNavigable parser urlUpdate
 |> Program.withReact "elmish-app"
 |> Program.run

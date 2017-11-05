@@ -1,4 +1,4 @@
-module Shared.DTO
+module MusicStore.DTO
 
 type Genre =
   { Id   : int
