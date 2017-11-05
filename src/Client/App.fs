@@ -46,14 +46,14 @@ type Model =
 
 type Msg =
 | AlbumsFetched of Result<Album[], exn>
-| AlbumDeleted of Result<Response, exn>
+| AlbumDeleted of Result<int, exn>
 | DeleteAlbum of Album
 
 let albums () =
   fetchAs<Album[]> "/api/albums" []
 
 let delete album =
-  fetch (sprintf "/api/album/%d" album.Id) [Method HttpMethod.DELETE]
+  fetchAs<int> (sprintf "/api/album/%d" album.Id) [Method HttpMethod.DELETE]
 
 let promise req args f = 
   Cmd.ofPromise req args (Ok >> f) (Error >> f)
@@ -94,15 +94,13 @@ let update msg (model : Model) =
           Artists = artists }
     model, Cmd.none
   | AlbumsFetched (Error _)
-  | AlbumDeleted _ ->
+  | AlbumDeleted  (Error _) ->
     model, Cmd.none
+  | AlbumDeleted (Ok id) ->
+    let albums = List.filter (fun a -> a.Id <> id) model.Albums
+    { model with Albums = albums }, Cmd.none
   | DeleteAlbum album ->
-    let msg = sprintf "Confirm delete album '%s'?" album.Title
-    if Fable.Import.Browser.window.confirm msg then
-      let albums = List.filter (fun a -> a.Id <> album.Id) model.Albums
-      { model with Albums = albums }, promise delete album AlbumDeleted
-    else
-      model, Cmd.none
+    model, promise delete album AlbumDeleted
 
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
@@ -168,6 +166,11 @@ let tdStr s = td [] [ str s ]
 
 let onClick dispatch msg = OnClick (fun _ ->  dispatch msg)
 
+let deleteAblum album dispatch =
+  let msg = sprintf "Confirm delete album '%s'?" album.Title
+  if Fable.Import.Browser.window.confirm msg then
+    dispatch (DeleteAlbum album)
+
 let viewManage model dispatch = [
   h2 [] [ str "Index" ]
   p [] [ aHref "Create new" NewAlbum ]
@@ -190,7 +193,8 @@ let viewManage model dispatch = [
         tdStr album.Genre.Name
         tdStr (string album.Price)
         td [ ] [ 
-          a [ Href (hash Manage); onClick dispatch (DeleteAlbum album) ] [ 
+          a [ Href (hash Manage)
+              OnClick (fun _ -> deleteAblum album dispatch) ] [ 
             str "Delete"
           ]
         ]
@@ -218,7 +222,7 @@ let viewNewAlbum model =
     |> List.sortBy snd
   [
   h2 [] [ str "Create" ]
-  form [ Action "/api/albums"; Method "POST"; Target "_blank" ] [
+  form [ ] [
     fieldset [] [
       legend [] [ str "Album" ]
       formLbl "Genre"
@@ -230,8 +234,9 @@ let viewNewAlbum model =
       formLbl "Price"
       formFld (input [Name "Price"; Type "number"])
     ]
-    input [ Type "submit"; Value "Create" ]
   ]
+  button [ ClassName "button" ] [ str "Create" ]
+  br []
   br []
   div [] [ aHref "Back to list" Manage ]
 ]

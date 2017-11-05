@@ -497,7 +497,7 @@ let albumsApi =
 
 let deleteAlbum id =
   albums <- Map.remove id albums
-  OK ""
+  OK (string id)
 
 let album id =
   choose [
