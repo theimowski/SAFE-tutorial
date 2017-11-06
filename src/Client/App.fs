@@ -105,12 +105,20 @@ let viewMain model dispatch =
 let blank desc url =
   a [ Href url; Target "_blank" ] [ str desc ]
 
+let navView = 
+  list 
+    [ Id "navlist" ]
+    [ "Home", Home
+      "Store", Genres
+      "Admin", Manage ]
+
 let view model dispatch =
   div [] [
     div [ Id "header" ] [ 
       h1 [] [
         aHref "SAFE Music Store" Home
       ]
+      navView
     ]
 
     div [ Id "main" ] (viewMain model dispatch)

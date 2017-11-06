@@ -16,5 +16,5 @@ let view model = [
 
   model.Genres
   |> Seq.map (fun g -> g.Name, (Genre g.Name))
-  |> list
+  |> list []
 ]

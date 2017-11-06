@@ -15,5 +15,5 @@ let view (genre : Genre) model = [
   |> Seq.filter (fun a -> a.Genre = genre) 
   |> Seq.toList
   |> Seq.map (fun a -> a.Title, (Album a.Id))
-  |> list
+  |> list []
 ]

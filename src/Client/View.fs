@@ -13,8 +13,8 @@ let thStr s = th [] [ str s ]
 
 let tdStr s = td [] [ str s ]
 
-let list xs = 
-  ul [] [ 
+let list props xs = 
+  ul props [ 
     for (txt, route) in xs -> 
       li [] [ aHref txt route ] 
   ]
