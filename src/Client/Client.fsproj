@@ -15,6 +15,7 @@
     <Compile Include="NewAlbum.fs" />
     <Compile Include="EditAlbum.fs" />
     <Compile Include="Manage.fs" />
+    <Compile Include="Logon.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />

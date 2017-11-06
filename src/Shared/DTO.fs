@@ -16,6 +16,9 @@ type Album =
     Price    : decimal
     ArtUrl   : string }
 
+type User =
+  { Name : string }
+
 module Form =
 
   type NewAlbum =
@@ -30,3 +33,7 @@ module Form =
       Artist : int
       Title  : string
       Price  : decimal }
+
+  type Logon =
+    { UserName : string 
+      Password : string }

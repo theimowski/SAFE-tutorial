@@ -25,5 +25,11 @@ let edit (album : Form.EditAlbum) =
     Method HttpMethod.PATCH
     album |> toJson |> U3.Case3 |> Body]
 
+let logon (form : Form.Logon) =
+  fetchAs<User> (sprintf "/api/account/logon") [
+    Method HttpMethod.POST
+    form |> toJson |> U3.Case3 |> Body
+  ]
+
 let promise req args f = 
   Cmd.ofPromise req args (Ok >> f) (Error >> f)

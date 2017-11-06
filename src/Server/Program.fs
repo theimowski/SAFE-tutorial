@@ -443,6 +443,26 @@ let mutable albums =
       i + 1, album)
   |> Map.ofList
 
+type Role =
+| Admin
+
+type User =
+  { Id : int
+    Name : string
+    Email : string 
+    Password : string
+    Role : Role}
+
+let users =
+  [{ Id = 1 
+     Name  = "admin"
+     Email = "admin@musicstore.com"
+     // password is 'admin'
+     Password = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
+     Role = Admin }]
+  |> List.map (fun u -> u.Id, u)
+  |> Map.ofList
+
 let OK body : WebPart = fun ctx ->
   async {
     do! Async.Sleep 1000
@@ -547,6 +567,35 @@ let updateAlbum id ctx = async {
   return! (OK (ServerCode.FableJson.toJson album) ctx)
 }
 
+open System
+
+let passHash (pass: string) =
+  use sha = Security.Cryptography.SHA256.Create()
+  Text.Encoding.UTF8.GetBytes(pass)
+  |> sha.ComputeHash
+  |> Array.map (fun b -> b.ToString("x2"))
+  |> String.concat ""
+
+
+let logon ctx = async {
+  let form =
+    ctx.request.rawForm
+    |> System.Text.Encoding.UTF8.GetString
+    |> ServerCode.FableJson.ofJson<Form.Logon>
+  
+  let user =
+    users
+    |> Seq.map (fun kv -> kv.Value)
+    |> Seq.tryFind (fun u -> u.Name = form.UserName &&
+                             u.Password = passHash form.Password)
+
+  match user with
+  | Some user ->
+    let user = { Name = user.Name}
+    return! (OK (ServerCode.FableJson.toJson user) ctx)
+  | None ->
+    return! RequestErrors.UNAUTHORIZED "" ctx
+}
 
 let album id =
   choose [
@@ -558,6 +607,7 @@ let app =
   choose [
     path "/api/albums" >=> albumsApi
     pathScan "/api/album/%d" album
+    path "/api/account/logon" >=> logon
 
     path "/api/genres" >=> getGenres
     pathScan "/api/album/%d" getAlbum

@@ -15,6 +15,7 @@ type Msg =
 | ManageMsg of Manage.Msg
 | NewAlbumMsg of NewAlbum.Msg
 | EditAlbumMsg of EditAlbum.Msg
+| LogonMsg of Logon.Msg
 
 let init route =
   let route = defaultArg route Home
@@ -23,8 +24,10 @@ let init route =
       Artists   = []
       Genres    = []
       Albums    = []
+      User      = None
       NewAlbum  = NewAlbum.init ()
-      EditAlbum = EditAlbum.initEmpty () }
+      EditAlbum = EditAlbum.initEmpty ()
+      LogonForm = Logon.init () }
   
   model, promise albums () AlbumsFetched
 
@@ -69,6 +72,9 @@ let update msg (model : Model) =
   | EditAlbumMsg msg ->
     let m, msg = EditAlbum.update msg model
     m, Cmd.map EditAlbumMsg msg
+  | LogonMsg msg ->
+    let m, msg = Logon.update msg model
+    m, Cmd.map LogonMsg msg
 
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
@@ -88,6 +94,7 @@ let viewMain model dispatch =
     | Genres      -> Genres.view model
     | Manage      -> Manage.view model (ManageMsg >> dispatch)
     | NewAlbum    -> NewAlbum.view model (NewAlbumMsg >> dispatch)
+    | Logon       -> Logon.view model (LogonMsg >> dispatch)
     | Woops       -> viewNotFound
     | Genre genre ->
       match model.Genres |> List.tryFind (fun g -> g.Name = genre) with
@@ -112,6 +119,16 @@ let navView =
       "Store", Genres
       "Admin", Manage ]
 
+let userView model =
+  div [Id "part-user"] [
+    match model.User with
+    | Some user ->
+      yield str (sprintf "Logged on as %s, " user.Name)
+      yield a [Href (hash Home)] [str "Log off"]
+    | None ->
+      yield aHref "Log on" Logon
+  ]
+
 let view model dispatch =
   div [] [
     div [ Id "header" ] [ 
@@ -119,6 +136,7 @@ let view model dispatch =
         aHref "SAFE Music Store" Home
       ]
       navView
+      userView model
     ]
 
     div [ Id "main" ] (viewMain model dispatch)
