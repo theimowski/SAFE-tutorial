@@ -21,7 +21,7 @@ let update msg model =
   | DeleteAlbum album ->
     model, promise delete album AlbumDeleted
   | EditAlbumMsg album ->
-    { model with EditAlbum = Some (EditAlbum.init album) } , Cmd.none
+    { model with EditAlbum = EditAlbum.init album } , Cmd.none
   | AlbumDeleted  (Error _) ->
     model, Cmd.none
   | AlbumDeleted (Ok id) ->
@@ -34,7 +34,7 @@ let truncate k (s : string) =
   else s
 
 let editAlbum album dispatch =
-  dispatch (EditAlbum album)
+  dispatch (EditAlbumMsg album)
 
 let deleteAblum album dispatch =
   let msg = sprintf "Confirm delete album '%s'?" album.Title
@@ -56,18 +56,22 @@ let view model dispatch = [
     ]
     
     tbody [] [
-      for album in model.Albums |> List.sortBy (fun a -> a.Artist.Name) do
+      for album in 
+        model.Albums 
+        |> List.sortBy (fun a -> a.Artist.Name + a.Title) do
       yield tr [] [
         tdStr (truncate 25 album.Artist.Name)
         tdStr (truncate 25 album.Title)
         tdStr album.Genre.Name
         tdStr (string album.Price)
         td [ ] [ 
-          a [ Href (hash (Navigation.EditAlbum album.Id))
+          a [ Href (hash (EdAlbum album.Id))
               OnClick (fun _ -> editAlbum album dispatch) ] [ 
             str "Edit"
           ]
           str " | "
+          aHref "Details" (Album album.Id)
+          str " | "          
           a [ Href (hash Manage)
               OnClick (fun _ -> deleteAblum album dispatch) ] [ 
             str "Delete"

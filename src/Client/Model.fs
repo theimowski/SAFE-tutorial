@@ -9,4 +9,4 @@ type Model =
     Artists   : Artist list
     Albums    : Album list
     NewAlbum  : Form.NewAlbum
-    EditAlbum : Form.EditAlbum option }
+    EditAlbum : Form.EditAlbum }

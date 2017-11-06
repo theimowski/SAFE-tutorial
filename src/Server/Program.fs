@@ -525,9 +525,33 @@ let deleteAlbum id =
   albums <- Map.remove id albums
   OK (string id)
 
+let updateAlbum id ctx = async {
+  let editedAlbum =
+    ctx.request.rawForm
+    |> System.Text.Encoding.UTF8.GetString
+    |> ServerCode.FableJson.ofJson<Form.EditAlbum>
+  
+  let artist = Map.find editedAlbum.Artist artists
+  let genre  = Map.find editedAlbum.Genre genres
+
+  let album =
+    { Id     = editedAlbum.Id
+      Artist = artist
+      Genre  = genre
+      Title  = editedAlbum.Title
+      Price  = editedAlbum.Price
+      ArtUrl = "/placeholder.gif" }
+
+  albums <- Map.add album.Id album albums
+
+  return! (OK (ServerCode.FableJson.toJson album) ctx)
+}
+
+
 let album id =
   choose [
     DELETE >=> deleteAlbum id
+    PATCH >=> updateAlbum id
   ]
 
 let app =

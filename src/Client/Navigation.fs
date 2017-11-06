@@ -11,18 +11,18 @@ type Route =
 | Album of int
 | Manage
 | NewAlbum
-| EditAlbum of int
+| EdAlbum of int
 | Woops
 
 let hash = function
-| Home        -> sprintf "#"
-| Genre g     -> sprintf "#genre/%s" g
-| Genres      -> sprintf "#genres"
-| Album a     -> sprintf "#album/%d" a
-| Manage      -> sprintf "#manage"
-| NewAlbum    -> sprintf "#albums/new"
-| EditAlbum a -> sprintf "#album/%d/edit" a
-| Woops       -> sprintf "#notfound"
+| Home      -> sprintf "#"
+| Genre g   -> sprintf "#genre/%s" g
+| Genres    -> sprintf "#genres"
+| Album a   -> sprintf "#album/%d" a
+| Manage    -> sprintf "#manage"
+| NewAlbum  -> sprintf "#albums/new"
+| EdAlbum a -> sprintf "#album/%d/edit" a
+| Woops     -> sprintf "#notfound"
 
 let route : Parser<Route -> Route, _> =
   oneOf [
@@ -31,7 +31,7 @@ let route : Parser<Route -> Route, _> =
     map Genre     (s "genre" </> str)
     map Album     (s "album" </> i32)
     map NewAlbum  (s "albums" </> s "new")
-    map EditAlbum (s "album" </> i32 </> s "edit")
+    map EdAlbum (s "album" </> i32 </> s "edit")
     map Manage    (s "manage")
   ]
 

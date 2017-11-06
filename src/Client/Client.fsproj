@@ -12,9 +12,9 @@
     <Compile Include="Genres.fs" />
     <Compile Include="Genre.fs" />
     <Compile Include="Album.fs" />
-    <Compile Include="Manage.fs" />
     <Compile Include="NewAlbum.fs" />
     <Compile Include="EditAlbum.fs" />
+    <Compile Include="Manage.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />

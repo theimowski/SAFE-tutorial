@@ -24,7 +24,7 @@ let init route =
       Genres    = []
       Albums    = []
       NewAlbum  = NewAlbum.init ()
-      EditAlbum = None }
+      EditAlbum = EditAlbum.initEmpty () }
   
   model, promise albums () AlbumsFetched
 
@@ -97,7 +97,7 @@ let viewMain model dispatch =
       match model.Albums |> List.tryFind (fun a -> a.Id = id) with
       | Some album -> Album.view album model
       | None       -> viewNotFound
-    | EditAlbum id ->
+    | EdAlbum id ->
       match model.Albums |> List.tryFind (fun a -> a.Id = id) with
       | Some album -> EditAlbum.view album model (EditAlbumMsg >> dispatch)
       | None       -> viewNotFound

@@ -20,5 +20,10 @@ let create (album : Form.NewAlbum) =
     Method HttpMethod.POST
     album |> toJson |> U3.Case3 |> Body]
 
+let edit (album : Form.EditAlbum) =
+  fetchAs<Album> (sprintf "/api/album/%d" album.Id) [
+    Method HttpMethod.PATCH
+    album |> toJson |> U3.Case3 |> Body]
+
 let promise req args f = 
   Cmd.ofPromise req args (Ok >> f) (Error >> f)
