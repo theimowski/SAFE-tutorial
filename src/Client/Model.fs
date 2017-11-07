@@ -11,4 +11,5 @@ type Model =
     User      : User option
     NewAlbum  : Form.NewAlbum
     EditAlbum : Form.EditAlbum
-    LogonForm : Form.Logon }
+    LogonForm : Form.Logon
+    LogonMsg  : string option }

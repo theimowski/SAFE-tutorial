@@ -27,17 +27,18 @@ let update msg model =
   | UserName name -> set { model.LogonForm with UserName = name }, Cmd.none
   | Password pass -> set { model.LogonForm with Password = pass }, Cmd.none
   | Logon form -> 
-    let cmd = 
-      Cmd.batch [ promise logon form LoggedOn 
-                  redirect Home ]
-    model, cmd
+    model, promise logon form LoggedOn
   | LoggedOn (Ok user) -> 
-    { model with User = Some user }, Cmd.none
-  | LoggedOn _ -> model, Cmd.none
+    { model with User = Some user }, redirect Home
+  | LoggedOn (Error _) ->
+    let msg = "Incorrect Login or Password"
+    { model with LogonMsg = Some msg }, Cmd.none
 
 let view model dispatch = [
   h2 [] [str "Log On"]
   p [] [ str "Please enter your user name and password."]
+
+  div [Id "logon-message"] [str (defaultArg model.LogonMsg "")]
 
   form [ ] [
     fieldset [] [

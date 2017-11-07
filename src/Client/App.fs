@@ -16,6 +16,7 @@ type Msg =
 | NewAlbumMsg of NewAlbum.Msg
 | EditAlbumMsg of EditAlbum.Msg
 | LogonMsg of Logon.Msg
+| LogOff
 
 let init route =
   let route = defaultArg route Home
@@ -27,12 +28,18 @@ let init route =
       User      = None
       NewAlbum  = NewAlbum.init ()
       EditAlbum = EditAlbum.initEmpty ()
-      LogonForm = Logon.init () }
+      LogonForm = Logon.init ()
+      LogonMsg  = None }
   
   model, promise albums () AlbumsFetched
 
 let urlUpdate (result:Option<Route>) model =
   match result with
+  | Some Logon ->
+    { model with 
+        Route = Logon
+        LogonForm = Logon.init ()
+        LogonMsg = None }, Cmd.none
   | Some route ->
     { model with Route = route }, Cmd.none
   | None ->
@@ -75,6 +82,8 @@ let update msg (model : Model) =
   | LogonMsg msg ->
     let m, msg = Logon.update msg model
     m, Cmd.map LogonMsg msg
+  | LogOff ->
+    { model with User = None }, Cmd.none
 
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
@@ -119,12 +128,12 @@ let navView =
       "Store", Genres
       "Admin", Manage ]
 
-let userView model =
-  div [Id "part-user"] [
+let userView model dispatch =
+  div [Id "part-user"] [ 
     match model.User with
     | Some user ->
       yield str (sprintf "Logged on as %s, " user.Name)
-      yield a [Href (hash Home)] [str "Log off"]
+      yield a [Href (hash Home); onClick dispatch LogOff] [str "Log off"]
     | None ->
       yield aHref "Log on" Logon
   ]
@@ -136,7 +145,7 @@ let view model dispatch =
         aHref "SAFE Music Store" Home
       ]
       navView
-      userView model
+      userView model dispatch
     ]
 
     div [ Id "main" ] (viewMain model dispatch)

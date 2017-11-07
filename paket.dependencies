@@ -8,6 +8,7 @@ nuget Fable.JsonConverter
 
 nuget FSharp.Core
 nuget Suave
+nuget jose-jwt
 
 clitool dotnet-fable
 
