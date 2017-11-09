@@ -19,7 +19,11 @@ type Msg =
 let update msg model =
   match msg with
   | DeleteAlbum album ->
-    model, promise delete album AlbumDeleted
+    match model.State with
+    | LoggedAsAdmin token -> 
+      model, promise (delete token) album AlbumDeleted
+    | _ ->
+      model, Cmd.none
   | EditAlbumMsg album ->
     { model with EditAlbum = EditAlbum.init album } , Cmd.none
   | AlbumDeleted  (Error _) ->

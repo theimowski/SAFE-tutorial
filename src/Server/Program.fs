@@ -5,9 +5,11 @@ open System.Net
 open Suave
 open Suave.Filters
 open Suave.Operators
+open Suave.RequestErrors
 open Suave.Successful
 
 open MusicStore.DTO
+open ServerCode.Auth
 
 let clientPath = Path.Combine("src","Client") |> Path.GetFullPath
 let port = 8085us
@@ -538,10 +540,17 @@ let addAlbum (ctx : HttpContext) = async {
   return! (OK (ServerCode.FableJson.toJson album) ctx)
 }
 
+let admin success =
+  ServerCode.Auth.loggedOn (function
+      | Some { UserRights.Role = Admin } -> success
+      | Some _ -> FORBIDDEN "Only for admin"
+      | _ -> UNAUTHORIZED "Not logged in"
+  )
+
 let albumsApi =
   choose [
     GET >=> getAlbums
-    POST >=> addAlbum
+    POST >=> admin addAlbum
   ]
 
 let deleteAlbum id =
@@ -595,7 +604,8 @@ let logon ctx = async {
   match user with
   | Some user ->
     let rights : ServerCode.Auth.UserRights = 
-      { UID = Guid.NewGuid() }
+      { UID  = Guid.NewGuid()
+        Role = user.Role }
     let user : MusicStore.DTO.Credentials =
       { Name  = user.Name
         Token = ServerCode.Auth.encode rights
@@ -607,8 +617,8 @@ let logon ctx = async {
 
 let album id =
   choose [
-    DELETE >=> deleteAlbum id
-    PATCH >=> updateAlbum id
+    DELETE >=> admin (deleteAlbum id)
+    PATCH  >=> admin (updateAlbum id)
   ]
 
 let app =

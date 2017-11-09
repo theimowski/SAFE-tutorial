@@ -8,21 +8,28 @@ open Fable.PowerPack.Fetch
 open Elmish
 
 open MusicStore.DTO
+open MusicStore.Model
 
 let albums () =
   fetchAs<Album[]> "/api/albums" []
+let authHeader (token : string) = Authorization ("Bearer " + token) 
 
-let delete album =
-  fetchAs<int> (sprintf "/api/album/%d" album.Id) [Method HttpMethod.DELETE]
+let delete token album =
+  fetchAs<int> 
+    (sprintf "/api/album/%d" album.Id) 
+    [ Method HttpMethod.DELETE
+      requestHeaders [ authHeader token ]]
 
-let create (album : Form.NewAlbum) =
+let create token (album : Form.NewAlbum) =
   fetchAs<Album> "/api/albums" [
     Method HttpMethod.POST
+    requestHeaders [ authHeader token ]
     album |> toJson |> U3.Case3 |> Body]
 
-let edit (album : Form.EditAlbum) =
+let edit token (album : Form.EditAlbum) =
   fetchAs<Album> (sprintf "/api/album/%d" album.Id) [
     Method HttpMethod.PATCH
+    requestHeaders [ authHeader token ]
     album |> toJson |> U3.Case3 |> Body]
 
 let logon (form : Form.Logon) =
@@ -33,3 +40,7 @@ let logon (form : Form.Logon) =
 
 let promise req args f = 
   Cmd.ofPromise req args (Ok >> f) (Error >> f)
+
+let (|LoggedAsAdmin|_|) = function
+| LoggedIn { Role = Admin; Token = t } -> Some t
+| _ -> None

@@ -44,9 +44,12 @@ let update msg model =
   | Title t     -> set { model.EditAlbum with Title = t }, Cmd.none
   | Price p     -> set { model.EditAlbum with Price = p }, Cmd.none
   | EditAlbum a -> 
-    let cmd = 
-      Cmd.batch [ promise edit a AlbumUpdated 
-                  redirect Manage]
+    let cmd =
+      match model.State with
+      | LoggedAsAdmin token ->
+        Cmd.batch [ promise (edit token) a AlbumUpdated 
+                    redirect Manage]
+      | _ -> Cmd.none
     model, cmd
   | AlbumUpdated (Ok album) ->
     let albums' = List.filter (fun a -> a.Id <> album.Id) model.Albums

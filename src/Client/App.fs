@@ -25,7 +25,7 @@ let init route =
       Artists   = []
       Genres    = []
       Albums    = []
-      State      = LoggedOff
+      State     = LoggedOff
       NewAlbum  = NewAlbum.init ()
       EditAlbum = EditAlbum.initEmpty ()
       LogonForm = Logon.init ()
@@ -87,12 +87,23 @@ let update msg (model : Model) =
 
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
+open System.Threading
+open MusicStore.Album
 
 let viewLoading = [ str "Loading..." ]
 
 let viewNotFound = [
   str "Woops... requested resource was not found."
 ]
+
+let viewUnauthorized = [
+  str "Woops... you're not allowed to do this."
+]
+
+let admin model view =
+  match model.State with
+  | LoggedAsAdmin _ -> view
+  | _ -> viewUnauthorized
 
 let viewMain model dispatch =
   if List.isEmpty model.Albums then 
@@ -101,8 +112,10 @@ let viewMain model dispatch =
     match model.Route with 
     | Home        -> Home.view
     | Genres      -> Genres.view model
-    | Manage      -> Manage.view model (ManageMsg >> dispatch)
-    | NewAlbum    -> NewAlbum.view model (NewAlbumMsg >> dispatch)
+    | Manage      -> 
+      admin model (Manage.view model (ManageMsg >> dispatch))
+    | NewAlbum    -> 
+      admin model (NewAlbum.view model (NewAlbumMsg >> dispatch))
     | Logon       -> Logon.view model (LogonMsg >> dispatch)
     | Woops       -> viewNotFound
     | Genre genre ->
@@ -115,7 +128,8 @@ let viewMain model dispatch =
       | None       -> viewNotFound
     | EdAlbum id ->
       match model.Albums |> List.tryFind (fun a -> a.Id = id) with
-      | Some album -> EditAlbum.view album model (EditAlbumMsg >> dispatch)
+      | Some album -> 
+        admin model (EditAlbum.view album model (EditAlbumMsg >> dispatch))
       | None       -> viewNotFound
 
 let blank desc url =
@@ -130,7 +144,7 @@ let navView model =
         yield "Admin", Manage
       | _ -> ()
     ]
-    
+
   list [ Id "navlist" ] tabs
 
 let userView model dispatch =

@@ -34,10 +34,13 @@ let update msg model =
   | Artist id  -> set { model.NewAlbum with Artist = id }, Cmd.none
   | Title t    -> set { model.NewAlbum with Title = t }, Cmd.none
   | Price p    -> set { model.NewAlbum with Price = p }, Cmd.none
-  | NewAlbum a -> 
-    let cmd = 
-      Cmd.batch [ promise create a AlbumCreated 
-                  redirect Manage]
+  | NewAlbum a ->
+    let cmd =
+      match model.State with
+      | LoggedAsAdmin token ->
+        Cmd.batch [ promise (create token) a AlbumCreated 
+                    redirect Manage]
+      | _ -> Cmd.none
     model, cmd
   | AlbumCreated (Ok album) -> 
     { model with Albums = album :: model.Albums }, Cmd.none

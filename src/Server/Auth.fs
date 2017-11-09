@@ -10,6 +10,7 @@ open Newtonsoft.Json
 open Jose
 
 open MusicStore.DTO
+open Suave.Http.ServerKey
 
 let passPhrase = 
   let crypto = RandomNumberGenerator.Create()
@@ -27,7 +28,8 @@ let private decodeString (jwt:string) =
   JWT.Decode(jwt, passPhrase, alg, enc)
 
 type UserRights = 
-  { UID : System.Guid }
+  { UID  : System.Guid
+    Role : Role }
 
 let encode (token : UserRights) =
   JsonConvert.SerializeObject token
@@ -40,3 +42,17 @@ let decode (jwt : string) : UserRights option =
     |> Some
   with _ ->
     None
+
+let bearerPrefix = "Bearer "
+
+let loggedOn success ctx = 
+  async {
+    let credentials =
+      match ctx.request.header "Authorization" with
+      | Choice1Of2 token when token.StartsWith bearerPrefix ->
+        let jwt = token.Substring(bearerPrefix.Length)
+        decode jwt
+      | _ ->
+        None
+    return! (success credentials) ctx
+  }
