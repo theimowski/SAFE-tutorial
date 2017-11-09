@@ -16,8 +16,14 @@ type Album =
     Price    : decimal
     ArtUrl   : string }
 
-type User =
-  { Name : string }
+type Role =
+| Admin
+| StandardUser
+
+type Credentials =
+  { Name  : string
+    Token : string
+    Role  : Role }
 
 module Form =
 

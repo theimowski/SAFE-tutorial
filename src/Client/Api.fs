@@ -26,7 +26,7 @@ let edit (album : Form.EditAlbum) =
     album |> toJson |> U3.Case3 |> Body]
 
 let logon (form : Form.Logon) =
-  fetchAs<User> (sprintf "/api/account/logon") [
+  fetchAs<Credentials> (sprintf "/api/account/logon") [
     Method HttpMethod.POST
     form |> toJson |> U3.Case3 |> Body
   ]

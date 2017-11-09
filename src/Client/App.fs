@@ -25,7 +25,7 @@ let init route =
       Artists   = []
       Genres    = []
       Albums    = []
-      User      = None
+      State      = LoggedOff
       NewAlbum  = NewAlbum.init ()
       EditAlbum = EditAlbum.initEmpty ()
       LogonForm = Logon.init ()
@@ -83,7 +83,7 @@ let update msg (model : Model) =
     let m, msg = Logon.update msg model
     m, Cmd.map LogonMsg msg
   | LogOff ->
-    { model with User = None }, Cmd.none
+    { model with State = LoggedOff }, Cmd.none
 
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
@@ -121,20 +121,25 @@ let viewMain model dispatch =
 let blank desc url =
   a [ Href url; Target "_blank" ] [ str desc ]
 
-let navView = 
-  list 
-    [ Id "navlist" ]
-    [ "Home", Home
-      "Store", Genres
-      "Admin", Manage ]
+let navView model =
+  let tabs =
+    [ yield "Home", Home
+      yield "Store", Genres
+      match model.State with
+      | LoggedIn { Role = Admin } ->
+        yield "Admin", Manage
+      | _ -> ()
+    ]
+    
+  list [ Id "navlist" ] tabs
 
 let userView model dispatch =
   div [Id "part-user"] [ 
-    match model.User with
-    | Some user ->
-      yield str (sprintf "Logged on as %s, " user.Name)
+    match model.State with
+    | LoggedIn creds ->
+      yield str (sprintf "Logged on as %s, " creds.Name)
       yield a [Href (hash Home); onClick dispatch LogOff] [str "Log off"]
-    | None ->
+    | LoggedOff ->
       yield aHref "Log on" Logon
   ]
 
@@ -144,7 +149,7 @@ let view model dispatch =
       h1 [] [
         aHref "SAFE Music Store" Home
       ]
-      navView
+      navView model
       userView model dispatch
     ]
 

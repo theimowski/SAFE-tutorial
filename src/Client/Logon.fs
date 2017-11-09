@@ -15,7 +15,7 @@ type Msg =
 | UserName of string
 | Password of string
 | Logon    of Form.Logon
-| LoggedOn of Result<User, exn>
+| LoggedOn of Result<Credentials, exn>
 
 let init () : Form.Logon =
   { UserName = ""
@@ -28,8 +28,8 @@ let update msg model =
   | Password pass -> set { model.LogonForm with Password = pass }, Cmd.none
   | Logon form -> 
     model, promise logon form LoggedOn
-  | LoggedOn (Ok user) -> 
-    { model with User = Some user }, redirect Home
+  | LoggedOn (Ok creds) -> 
+    { model with State = LoggedIn creds }, redirect Home
   | LoggedOn (Error _) ->
     let msg = "Incorrect Login or Password"
     { model with LogonMsg = Some msg }, Cmd.none

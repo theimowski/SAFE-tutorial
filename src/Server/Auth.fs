@@ -9,6 +9,8 @@ open Newtonsoft.Json
 
 open Jose
 
+open MusicStore.DTO
+
 let passPhrase = 
   let crypto = RandomNumberGenerator.Create()
   let randomNumber = Array.init 32 byte
@@ -24,20 +26,17 @@ let private encodeString (payload:string) =
 let private decodeString (jwt:string) =
   JWT.Decode(jwt, passPhrase, alg, enc)
 
-let encode token =
+type UserRights = 
+  { UID : System.Guid }
+
+let encode (token : UserRights) =
   JsonConvert.SerializeObject token
   |> encodeString
 
-let decode<'a> (jwt:string) : 'a =
-  decodeString jwt
-  |> JsonConvert.DeserializeObject<'a>
-
-type UserRights =
-  { Name : string }
-
-let validate (jwt:string) : UserRights option =
-  try
-    let token = decode jwt
-    Some token
-  with
-  | _ -> None
+let decode (jwt : string) : UserRights option =
+  try 
+    decodeString jwt
+    |> JsonConvert.DeserializeObject<UserRights>
+    |> Some
+  with _ ->
+    None

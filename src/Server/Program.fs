@@ -443,9 +443,6 @@ let mutable albums =
       i + 1, album)
   |> Map.ofList
 
-type Role =
-| Admin
-
 type User =
   { Id : int
     Name : string
@@ -459,7 +456,13 @@ let users =
      Email = "admin@musicstore.com"
      // password is 'admin'
      Password = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
-     Role = Admin }]
+     Role = Admin }
+   { Id = 2
+     Name  = "user"
+     Email = "user@musicstore.com"
+     // password is 'user'
+     Password = "04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb"
+     Role = StandardUser }]
   |> List.map (fun u -> u.Id, u)
   |> Map.ofList
 
@@ -591,10 +594,15 @@ let logon ctx = async {
 
   match user with
   | Some user ->
-    let user = { Name = user.Name}
+    let rights : ServerCode.Auth.UserRights = 
+      { UID = Guid.NewGuid() }
+    let user : MusicStore.DTO.Credentials =
+      { Name  = user.Name
+        Token = ServerCode.Auth.encode rights
+        Role  = user.Role }
     return! (OK (ServerCode.FableJson.toJson user) ctx)
   | None ->
-    return! RequestErrors.UNAUTHORIZED "" ctx
+    return! RequestErrors.UNAUTHORIZED "Invalid username or password" ctx
 }
 
 let album id =
