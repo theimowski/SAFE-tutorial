@@ -474,10 +474,9 @@ type Cart =
     AlbumId  : int
     Count    : int }
 
-let mutable carts = 
-  [ {RecordId = 1; CartId = "user"; AlbumId = 1; Count = 3}]
-  
-  //List.empty<Cart>
+let mutable carts : Map<int, Cart> = 
+  []
+  |> Map.ofList
 
 let OK body : WebPart = fun ctx ->
   async {
@@ -636,15 +635,15 @@ let album id =
   ]
 
 let getCart id ctx = async {
-  match carts |> List.filter (fun c -> c.CartId = id) with
+  match carts |> Seq.filter (fun c -> c.Value.CartId = id) |> Seq.toList with
   | [] ->
     return! NOT_FOUND "Cart not found" ctx
   | carts ->
     let carts =
       carts
       |> List.choose (fun c -> albums 
-                               |> Map.tryFind c.AlbumId
-                               |> Option.map (fun a -> a, c.Count))
+                               |> Map.tryFind c.Value.AlbumId
+                               |> Option.map (fun a -> a, c.Value.Count))
       |> List.map (fun (a, c) -> { Album = a; Count = c} )
     match carts with
     | [] ->
@@ -653,8 +652,38 @@ let getCart id ctx = async {
       return! (OK (ServerCode.FableJson.toJson carts) ctx)
 }
 
+let addToAlbum id ctx = 
+  async {
+    let albumId =
+      ctx.request.rawForm
+      |> System.Text.Encoding.UTF8.GetString
+      |> ServerCode.FableJson.ofJson<int>
+
+    let cart =
+      carts
+      |> Seq.tryFind (fun c -> c.Value.CartId = id && c.Value.AlbumId = albumId)
+
+    let cart : Cart =
+      match cart with
+      | Some kv ->
+        { kv.Value with Count = kv.Value.Count + 1 }
+      | None ->
+        let newId = 
+          if carts.IsEmpty then 1
+          else
+            carts 
+            |> Seq.maxBy (fun kv -> kv.Key)
+            |> fun x -> x.Key + 1
+        { Count = 1; RecordId = newId; CartId = id; AlbumId = albumId }
+
+    carts <- Map.add cart.RecordId cart carts
+  
+    return! getCart id ctx
+  }
+
 let cart id =
   choose [
+    POST >=> addToAlbum id
     GET >=> getCart id
   ]
 

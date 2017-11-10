@@ -16,6 +16,8 @@ type Msg =
 | NewAlbumMsg of NewAlbum.Msg
 | EditAlbumMsg of EditAlbum.Msg
 | LogonMsg of Logon.Msg
+| AlbumMsg of Album.Msg
+| CartMsg of Cart.Msg
 | LogOff
 
 let init route =
@@ -83,6 +85,9 @@ let update msg (model : Model) =
   | LogonMsg msg ->
     let m, msg = Logon.update msg model
     m, Cmd.map LogonMsg msg
+  | AlbumMsg msg ->
+    let m, msg = Album.update msg model
+    m, Cmd.map AlbumMsg msg
   | LogOff ->
     { model with State = LoggedOff }, Cmd.none
 
@@ -117,7 +122,7 @@ let viewMain model dispatch =
     | NewAlbum    -> 
       admin model (NewAlbum.view model (NewAlbumMsg >> dispatch))
     | Logon       -> Logon.view model (LogonMsg >> dispatch)
-    | Cart        -> Cart.view model
+    | Cart        -> Cart.view model (CartMsg >> dispatch)
     | Woops       -> viewNotFound
     | Genre genre ->
       match model.Genres |> List.tryFind (fun g -> g.Name = genre) with
@@ -125,7 +130,7 @@ let viewMain model dispatch =
       | None       -> viewNotFound
     | Album id    ->
       match model.Albums |> List.tryFind (fun a -> a.Id = id) with
-      | Some album -> Album.view album model
+      | Some album -> Album.view album model (AlbumMsg >> dispatch)
       | None       -> viewNotFound
     | EdAlbum id ->
       match model.Albums |> List.tryFind (fun a -> a.Id = id) with
@@ -156,7 +161,8 @@ let userView model dispatch =
     | LoggedIn creds ->
       yield str (sprintf "Logged on as %s, " creds.Name)
       yield a [Href (hash Home); onClick dispatch LogOff] [str "Log off"]
-    | LoggedOff ->
+    | LoggedOff
+    | CartIdOnly _ ->
       yield aHref "Log on" Logon
   ]
 

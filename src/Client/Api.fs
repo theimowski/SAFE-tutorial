@@ -41,6 +41,12 @@ let logon (form : Form.Logon) =
 let cartItems cartId =
   fetchAs<CartItem[]> (sprintf "/api/cart/%s" cartId) [ ]
 
+let addToCart (cartId, albumId : int) =
+  fetchAs<CartItem[]> (sprintf "/api/cart/%s" cartId) [
+    Method HttpMethod.POST
+    albumId |> toJson |> U3.Case3 |> Body
+  ]
+
 let promise req args f = 
   Cmd.ofPromise req args (Ok >> f) (Error >> f)
 

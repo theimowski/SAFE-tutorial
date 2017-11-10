@@ -3,10 +3,20 @@ module MusicStore.Cart
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
 
+open Elmish
+
 open MusicStore.DTO
 open MusicStore.Model
 open MusicStore.Navigation
 open MusicStore.View
+
+type Msg = 
+| Remove of Album
+
+let update msg model =
+  match msg with
+  | Remove album ->
+    model, Cmd.none 
 
 let emptyView = 
   [ h2 [] [ str "Your cart is empty" ] 
@@ -14,7 +24,7 @@ let emptyView =
     aHref "store" Home
     str "!" ]
 
-let nonEmptyView items =
+let nonEmptyView items dispatch =
   [ h2 [] [ str "Review your cart:" ]
     table [] [
       thead [] [
@@ -32,7 +42,12 @@ let nonEmptyView items =
           td [] [ aHref i.Album.Title (Album i.Album.Id) ]
           tdStr (string i.Album.Price)
           tdStr (string i.Count)
-          td [] [ a [ Href (hash Cart) ] [ str "Remove from Cart" ] ]
+          td [] [ 
+            a [ Href (hash Cart)
+                onClick dispatch (Remove i.Album)
+          ] [ 
+            str "Remove from Cart" ] 
+          ]
         ]
 
         yield tr [] [
@@ -45,7 +60,7 @@ let nonEmptyView items =
     ]
   ]
 
-let view model =
+let view model dispatch =
   match model.CartItems with
   | [] -> emptyView
-  | xs -> nonEmptyView xs
+  | xs -> nonEmptyView xs dispatch
