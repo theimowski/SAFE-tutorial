@@ -694,9 +694,6 @@ let app =
     path "/api/account/logon" >=> logon
     pathScan "/api/cart/%s" cart
 
-    path "/api/genres" >=> getGenres
-    pathScan "/api/album/%d" getAlbum
-    pathScan "/api/genre/%s/albums" getAlbumsForGenre
     Files.browseHome
   ]
 

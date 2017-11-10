@@ -2,3 +2,4 @@ FSharp.Core
 Suave
 Fable.JsonConverter
 jose-jwt
+Microsoft.DotNet.Watcher.Tools
