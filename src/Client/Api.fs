@@ -38,6 +38,9 @@ let logon (form : Form.Logon) =
     form |> toJson |> U3.Case3 |> Body
   ]
 
+let cartItems cartId =
+  fetchAs<CartItem[]> (sprintf "/api/cart/%s" cartId) [ ]
+
 let promise req args f = 
   Cmd.ofPromise req args (Ok >> f) (Error >> f)
 

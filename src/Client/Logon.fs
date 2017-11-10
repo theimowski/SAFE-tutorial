@@ -16,6 +16,7 @@ type Msg =
 | Password of string
 | Logon    of Form.Logon
 | LoggedOn of Result<Credentials, exn>
+| CartItemsFetched of Result<CartItem[], exn>
 
 let init () : Form.Logon =
   { UserName = ""
@@ -28,11 +29,20 @@ let update msg model =
   | Password pass -> set { model.LogonForm with Password = pass }, Cmd.none
   | Logon form -> 
     model, promise logon form LoggedOn
-  | LoggedOn (Ok creds) -> 
-    { model with State = LoggedIn creds }, redirect Home
+  | LoggedOn (Ok creds) ->
+    let cmd = 
+      Cmd.batch [
+        redirect Home
+        promise cartItems creds.Name CartItemsFetched
+      ]
+    { model with State = LoggedIn creds }, cmd
   | LoggedOn (Error _) ->
     let msg = "Incorrect Login or Password"
     { model with LogonMsg = Some msg }, Cmd.none
+  | CartItemsFetched (Ok items) ->
+    { model with CartItems = List.ofArray items }, Cmd.none
+  | CartItemsFetched (Error _) ->
+    model, Cmd.none
 
 let view model dispatch = [
   h2 [] [str "Log On"]

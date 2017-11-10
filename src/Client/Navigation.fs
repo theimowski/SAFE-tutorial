@@ -13,6 +13,7 @@ type Route =
 | NewAlbum
 | EdAlbum of int
 | Logon
+| Cart
 | Woops
 
 let hash = function
@@ -24,6 +25,7 @@ let hash = function
 | NewAlbum  -> sprintf "#albums/new"
 | EdAlbum a -> sprintf "#album/%d/edit" a
 | Logon     -> sprintf "#account/logon"
+| Cart      -> sprintf "#cart"
 | Woops     -> sprintf "#notfound"
 
 let route : Parser<Route -> Route, _> =
@@ -35,6 +37,7 @@ let route : Parser<Route -> Route, _> =
     map NewAlbum  (s "albums" </> s "new")
     map EdAlbum   (s "album" </> i32 </> s "edit")
     map Logon     (s "account" </> s "logon")
+    map Cart      (s "cart")
     map Manage    (s "manage")
   ]
 

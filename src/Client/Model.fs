@@ -13,6 +13,7 @@ type Model =
     Artists   : Artist list
     Albums    : Album list
     State     : State
+    CartItems : CartItem list
     NewAlbum  : Form.NewAlbum
     EditAlbum : Form.EditAlbum
     LogonForm : Form.Logon

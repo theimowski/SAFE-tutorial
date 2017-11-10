@@ -20,6 +20,17 @@ type Role =
 | Admin
 | StandardUser
 
+type CartItem =
+  { Album : Album
+    Count : int }
+
+module CartItem =
+  let totalPrice =
+    List.sumBy (fun item -> item.Album.Price * (decimal) item.Count)
+
+  let totalCount =
+    List.sumBy (fun item -> item.Count)
+
 type Credentials =
   { Name  : string
     Token : string

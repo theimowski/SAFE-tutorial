@@ -468,6 +468,17 @@ let users =
   |> List.map (fun u -> u.Id, u)
   |> Map.ofList
 
+type Cart =
+  { RecordId : int 
+    CartId   : string
+    AlbumId  : int
+    Count    : int }
+
+let mutable carts = 
+  [ {RecordId = 1; CartId = "user"; AlbumId = 1; Count = 3}]
+  
+  //List.empty<Cart>
+
 let OK body : WebPart = fun ctx ->
   async {
     do! Async.Sleep 1000
@@ -580,6 +591,9 @@ let updateAlbum id ctx = async {
 }
 
 open System
+open System.Windows.Input
+open System.Diagnostics.Tracing
+open Newtonsoft.Json.Serialization
 
 let passHash (pass: string) =
   use sha = Security.Cryptography.SHA256.Create()
@@ -621,11 +635,35 @@ let album id =
     PATCH  >=> admin (updateAlbum id)
   ]
 
+let getCart id ctx = async {
+  match carts |> List.filter (fun c -> c.CartId = id) with
+  | [] ->
+    return! NOT_FOUND "Cart not found" ctx
+  | carts ->
+    let carts =
+      carts
+      |> List.choose (fun c -> albums 
+                               |> Map.tryFind c.AlbumId
+                               |> Option.map (fun a -> a, c.Count))
+      |> List.map (fun (a, c) -> { Album = a; Count = c} )
+    match carts with
+    | [] ->
+      return! NOT_FOUND "Cart not found" ctx
+    | _ ->
+      return! (OK (ServerCode.FableJson.toJson carts) ctx)
+}
+
+let cart id =
+  choose [
+    GET >=> getCart id
+  ]
+
 let app =
   choose [
     path "/api/albums" >=> albumsApi
     pathScan "/api/album/%d" album
     path "/api/account/logon" >=> logon
+    pathScan "/api/cart/%s" cart
 
     path "/api/genres" >=> getGenres
     pathScan "/api/album/%d" getAlbum

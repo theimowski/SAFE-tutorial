@@ -26,6 +26,7 @@ let init route =
       Genres    = []
       Albums    = []
       State     = LoggedOff
+      CartItems = []
       NewAlbum  = NewAlbum.init ()
       EditAlbum = EditAlbum.initEmpty ()
       LogonForm = Logon.init ()
@@ -87,8 +88,7 @@ let update msg (model : Model) =
 
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
-open System.Threading
-open MusicStore.Album
+open Fable.Import.Browser
 
 let viewLoading = [ str "Loading..." ]
 
@@ -117,6 +117,7 @@ let viewMain model dispatch =
     | NewAlbum    -> 
       admin model (NewAlbum.view model (NewAlbumMsg >> dispatch))
     | Logon       -> Logon.view model (LogonMsg >> dispatch)
+    | Cart        -> Cart.view model
     | Woops       -> viewNotFound
     | Genre genre ->
       match model.Genres |> List.tryFind (fun g -> g.Name = genre) with
@@ -136,9 +137,11 @@ let blank desc url =
   a [ Href url; Target "_blank" ] [ str desc ]
 
 let navView model =
+  let cartLbl = sprintf "Cart (%d)" (CartItem.totalCount model.CartItems)
   let tabs =
     [ yield "Home", Home
       yield "Store", Genres
+      yield cartLbl, Cart
       match model.State with
       | LoggedIn { Role = Admin } ->
         yield "Admin", Manage
