@@ -47,6 +47,12 @@ let addToCart (cartId, albumId : int) =
     albumId |> toJson |> U3.Case3 |> Body
   ]
 
+let removeFromCart (cartId, albumId : int) =
+  fetchAs<CartItem[]> (sprintf "/api/cart/%s" cartId) [
+    Method HttpMethod.DELETE
+    albumId |> toJson |> U3.Case3 |> Body
+  ]
+
 let promise req args f = 
   Cmd.ofPromise req args (Ok >> f) (Error >> f)
 

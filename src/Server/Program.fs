@@ -652,7 +652,7 @@ let getCart id ctx = async {
       return! (OK (ServerCode.FableJson.toJson carts) ctx)
 }
 
-let addToAlbum id ctx = 
+let addToCart id ctx = 
   async {
     let albumId =
       ctx.request.rawForm
@@ -681,10 +681,36 @@ let addToAlbum id ctx =
     return! getCart id ctx
   }
 
+let deleteFromCart id ctx =
+  async {
+    let albumId =
+      ctx.request.rawForm
+      |> System.Text.Encoding.UTF8.GetString
+      |> ServerCode.FableJson.ofJson<int>
+
+    let cart =
+      carts
+      |> Seq.tryFind (fun c -> c.Value.CartId = id && c.Value.AlbumId = albumId)
+
+    match cart with
+    | Some cart ->
+      if cart.Value.Count <= 1 then
+        carts <- Map.remove cart.Key carts
+        return! (OK (ServerCode.FableJson.toJson [||]) ctx)
+      else
+        let cart =
+          { cart.Value with Count = cart.Value.Count - 1 }
+        carts <- Map.add cart.RecordId cart carts
+        return! getCart id ctx
+    | _ ->
+      return! NOT_FOUND "Cart not found" ctx
+  }
+
 let cart id =
   choose [
-    POST >=> addToAlbum id
+    POST >=> addToCart id
     GET >=> getCart id
+    DELETE >=> deleteFromCart id
   ]
 
 let app =

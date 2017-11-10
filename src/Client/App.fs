@@ -88,6 +88,9 @@ let update msg (model : Model) =
   | AlbumMsg msg ->
     let m, msg = Album.update msg model
     m, Cmd.map AlbumMsg msg
+  | CartMsg msg ->
+    let m, msg = Cart.update msg model
+    m, Cmd.map CartMsg msg
   | LogOff ->
     { model with State = LoggedOff }, Cmd.none
 
@@ -142,11 +145,12 @@ let blank desc url =
   a [ Href url; Target "_blank" ] [ str desc ]
 
 let navView model =
-  let cartLbl = sprintf "Cart (%d)" (CartItem.totalCount model.CartItems)
+  let cartTotal = CartItem.totalCount model.CartItems
   let tabs =
     [ yield "Home", Home
       yield "Store", Genres
-      yield cartLbl, Cart
+      if cartTotal > 0 then
+        yield sprintf "Cart (%d)" cartTotal, Cart
       match model.State with
       | LoggedIn { Role = Admin } ->
         yield "Admin", Manage

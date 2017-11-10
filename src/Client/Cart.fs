@@ -9,14 +9,25 @@ open MusicStore.DTO
 open MusicStore.Model
 open MusicStore.Navigation
 open MusicStore.View
+open MusicStore.Api
 
 type Msg = 
 | Remove of Album
+| RemovedFromCart of Result<CartItem[], exn>
 
 let update msg model =
   match msg with
   | Remove album ->
-    model, Cmd.none 
+    match model.State with
+    | LoggedIn { Name = cartId }
+    | CartIdOnly cartId ->
+      model, promise removeFromCart (cartId, album.Id) RemovedFromCart
+    | _ ->
+      model, Cmd.none
+  | RemovedFromCart (Ok items) ->
+    { model with CartItems = List.ofArray items}, Cmd.none
+  | RemovedFromCart (Error _) ->
+    model, Cmd.none
 
 let emptyView = 
   [ h2 [] [ str "Your cart is empty" ] 
