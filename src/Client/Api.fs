@@ -9,9 +9,11 @@ open Elmish
 
 open MusicStore.DTO
 open MusicStore.Model
+open System.Net.Http
 
 let albums () =
   fetchAs<Album[]> "/api/albums" []
+
 let authHeader (token : string) = Authorization ("Bearer " + token) 
 
 let delete token album =
@@ -41,6 +43,12 @@ let logon (form : Form.Logon) =
 let cartItems cartId =
   fetchAs<CartItem[]> (sprintf "/api/cart/%s" cartId) [ ]
 
+let upgradeCart (oldCartId, newCartId : string) =
+  fetchAs<CartItem[]> (sprintf "/api/cart/%s" oldCartId) [
+    Method HttpMethod.PATCH
+    newCartId |> toJson |> U3.Case3 |> Body
+  ]
+
 let addToCart (cartId, albumId : int) =
   fetchAs<CartItem[]> (sprintf "/api/cart/%s" cartId) [
     Method HttpMethod.POST
@@ -51,6 +59,12 @@ let removeFromCart (cartId, albumId : int) =
   fetchAs<CartItem[]> (sprintf "/api/cart/%s" cartId) [
     Method HttpMethod.DELETE
     albumId |> toJson |> U3.Case3 |> Body
+  ]
+
+let register (form : Form.Register) =
+  fetchAs<unit> "/accounts/register" [
+    Method HttpMethod.POST
+    form |> toJson |> U3.Case3 |> Body
   ]
 
 let promise req args f = 

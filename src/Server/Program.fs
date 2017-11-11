@@ -452,7 +452,7 @@ type User =
     Password : string
     Role : Role}
 
-let users =
+let mutable users =
   [{ Id = 1 
      Name  = "admin"
      Email = "admin@musicstore.com"
@@ -593,6 +593,7 @@ open System
 open System.Windows.Input
 open System.Diagnostics.Tracing
 open Newtonsoft.Json.Serialization
+open Microsoft.VisualBasic.CompilerServices
 
 let passHash (pass: string) =
   use sha = Security.Cryptography.SHA256.Create()
@@ -706,12 +707,56 @@ let deleteFromCart id ctx =
       return! NOT_FOUND "Cart not found" ctx
   }
 
+let upgradeCart oldCartId ctx =
+  async {
+    let newCartId =
+      ctx.request.rawForm
+      |> System.Text.Encoding.UTF8.GetString
+      |> ServerCode.FableJson.ofJson<string>
+
+    let filteredCarts =
+      carts
+      |> Seq.map (fun kv -> kv.Value)
+      |> Seq.filter (fun c -> c.CartId = oldCartId)
+
+    for cart in filteredCarts do
+      let cart' = { cart with CartId = newCartId }
+      carts <- Map.add cart.RecordId cart' carts
+
+    return! getCart newCartId ctx
+  }
+
 let cart id =
   choose [
     POST >=> addToCart id
+    PATCH >=> upgradeCart id
     GET >=> getCart id
     DELETE >=> deleteFromCart id
   ]
+
+let register ctx = async {
+  let form =
+    ctx.request.rawForm
+    |> System.Text.Encoding.UTF8.GetString
+    |> ServerCode.FableJson.ofJson<Form.Register>
+  
+  let newId =
+    users
+    |> Seq.map (fun kv -> kv.Key)
+    |> Seq.max
+    |> ((+)1)
+
+  let newUser : User =
+    { Id       = newId
+      Name     = form.UserName
+      Email    = form.Email
+      Password = passHash form.Password 
+      Role     = StandardUser }
+
+  users <- Map.add newId newUser users
+  
+  return! OK " " ctx
+}
 
 let app =
   choose [
@@ -719,6 +764,7 @@ let app =
     pathScan "/api/album/%d" album
     path "/api/account/logon" >=> logon
     pathScan "/api/cart/%s" cart
+    path "/accounts/register" >=> register
 
     Files.browseHome
   ]

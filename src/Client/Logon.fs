@@ -10,12 +10,14 @@ open MusicStore.DTO
 open MusicStore.Model
 open MusicStore.Navigation
 open MusicStore.View
+open System.Net
+open System.Threading
 
 type Msg =
-| UserName of string
-| Password of string
-| Logon    of Form.Logon
-| LoggedOn of Result<Credentials, exn>
+| UserName         of string
+| Password         of string
+| Logon            of Form.Logon
+| LoggedOn         of Result<Credentials, exn>
 | CartItemsFetched of Result<CartItem[], exn>
 
 let init () : Form.Logon =
@@ -30,10 +32,16 @@ let update msg model =
   | Logon form -> 
     model, promise logon form LoggedOn
   | LoggedOn (Ok creds) ->
+    let cartCmd =
+      match model.State with
+      | CartIdOnly oldCartId ->
+        promise upgradeCart (oldCartId, creds.Name) CartItemsFetched
+      | _ ->
+        promise cartItems creds.Name CartItemsFetched
     let cmd = 
       Cmd.batch [
         redirect Home
-        promise cartItems creds.Name CartItemsFetched
+        cartCmd
       ]
     { model with State = LoggedIn creds }, cmd
   | LoggedOn (Error _) ->
@@ -44,9 +52,14 @@ let update msg model =
   | CartItemsFetched (Error _) ->
     model, Cmd.none
 
+
 let view model dispatch = [
   h2 [] [str "Log On"]
-  p [] [ str "Please enter your user name and password."]
+  p [] [ 
+    str "Please enter your user name and password."
+    aHref " Register" Register
+    str " if you don't have an account yet."
+  ]
 
   div [Id "logon-message"] [str (defaultArg model.LogonMsg "")]
 

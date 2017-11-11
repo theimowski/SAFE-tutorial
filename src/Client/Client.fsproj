@@ -17,6 +17,7 @@
     <Compile Include="Manage.fs" />
     <Compile Include="Logon.fs" />
     <Compile Include="Cart.fs" />
+    <Compile Include="Register.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />

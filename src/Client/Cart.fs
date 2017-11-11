@@ -49,17 +49,17 @@ let nonEmptyView items dispatch =
 
       tbody [] [
         for i in items |> List.sortBy (fun i -> i.Album.Artist.Name) do
-        yield tr [] [
-          td [] [ aHref i.Album.Title (Album i.Album.Id) ]
-          tdStr (string i.Album.Price)
-          tdStr (string i.Count)
-          td [] [ 
-            a [ Href (hash Cart)
-                onClick dispatch (Remove i.Album)
-          ] [ 
-            str "Remove from Cart" ] 
+          yield tr [] [
+            td [] [ aHref i.Album.Title (Album i.Album.Id) ]
+            tdStr (string i.Album.Price)
+            tdStr (string i.Count)
+            td [] [ 
+              a [ Href (hash Cart)
+                  onClick dispatch (Remove i.Album)
+            ] [ 
+              str "Remove from Cart" ] 
+            ]
           ]
-        ]
 
         yield tr [] [
           tdStr "Total"

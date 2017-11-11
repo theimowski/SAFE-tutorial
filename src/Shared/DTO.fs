@@ -54,3 +54,9 @@ module Form =
   type Logon =
     { UserName : string 
       Password : string }
+
+  type Register =
+     { UserName : string
+       Email    : string
+       Password : string
+       RepeatPassword : string }

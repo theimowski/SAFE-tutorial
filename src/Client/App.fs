@@ -16,6 +16,7 @@ type Msg =
 | NewAlbumMsg of NewAlbum.Msg
 | EditAlbumMsg of EditAlbum.Msg
 | LogonMsg of Logon.Msg
+| RegisterMsg of Register.Msg
 | AlbumMsg of Album.Msg
 | CartMsg of Cart.Msg
 | LogOff
@@ -23,16 +24,17 @@ type Msg =
 let init route =
   let route = defaultArg route Home
   let model =
-    { Route     = route
-      Artists   = []
-      Genres    = []
-      Albums    = []
-      State     = LoggedOff
-      CartItems = []
-      NewAlbum  = NewAlbum.init ()
-      EditAlbum = EditAlbum.initEmpty ()
-      LogonForm = Logon.init ()
-      LogonMsg  = None }
+    { Route        = route
+      Artists      = []
+      Genres       = []
+      Albums       = []
+      State        = LoggedOff
+      CartItems    = []
+      NewAlbum     = NewAlbum.init ()
+      EditAlbum    = EditAlbum.initEmpty ()
+      LogonForm    = Logon.init ()
+      RegisterForm = Register.init()
+      LogonMsg     = None }
   
   model, promise albums () AlbumsFetched
 
@@ -85,6 +87,9 @@ let update msg (model : Model) =
   | LogonMsg msg ->
     let m, msg = Logon.update msg model
     m, Cmd.map LogonMsg msg
+  | RegisterMsg msg ->
+    let m, msg = Register.update msg model
+    m, Cmd.map RegisterMsg msg
   | AlbumMsg msg ->
     let m, msg = Album.update msg model
     m, Cmd.map AlbumMsg msg
@@ -92,7 +97,9 @@ let update msg (model : Model) =
     let m, msg = Cart.update msg model
     m, Cmd.map CartMsg msg
   | LogOff ->
-    { model with State = LoggedOff }, Cmd.none
+    { model with 
+        State     = LoggedOff
+        CartItems = [] }, Cmd.none
 
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
@@ -125,6 +132,7 @@ let viewMain model dispatch =
     | NewAlbum    -> 
       admin model (NewAlbum.view model (NewAlbumMsg >> dispatch))
     | Logon       -> Logon.view model (LogonMsg >> dispatch)
+    | Register    -> Register.view model (RegisterMsg >> dispatch)
     | Cart        -> Cart.view model (CartMsg >> dispatch)
     | Woops       -> viewNotFound
     | Genre genre ->
