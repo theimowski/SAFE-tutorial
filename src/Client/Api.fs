@@ -62,7 +62,7 @@ let removeFromCart (cartId, albumId : int) =
   ]
 
 let register (form : Form.Register) =
-  fetchAs<unit> "/accounts/register" [
+  fetchAs<Credentials> "/api/accounts/register" [
     Method HttpMethod.POST
     form |> toJson |> U3.Case3 |> Body
   ]

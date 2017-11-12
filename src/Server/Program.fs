@@ -755,7 +755,14 @@ let register ctx = async {
 
   users <- Map.add newId newUser users
   
-  return! OK " " ctx
+  let rights : ServerCode.Auth.UserRights = 
+      { UID  = Guid.NewGuid()
+        Role = newUser.Role }
+  let user : MusicStore.DTO.Credentials =
+      { Name  = newUser.Name
+        Token = ServerCode.Auth.encode rights
+        Role  = newUser.Role }
+  return! (OK (ServerCode.FableJson.toJson user) ctx)
 }
 
 let app =
@@ -764,7 +771,7 @@ let app =
     pathScan "/api/album/%d" album
     path "/api/account/logon" >=> logon
     pathScan "/api/cart/%s" cart
-    path "/accounts/register" >=> register
+    path "/api/accounts/register" >=> POST >=> register
 
     Files.browseHome
   ]

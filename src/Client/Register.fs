@@ -17,7 +17,7 @@ type Msg =
 | Password of string
 | RepeatPassword of string
 | Register of Form.Register
-| Registered of Result<unit, exn>
+| Registered of Result<Credentials, exn>
 
 let init () : Form.Register =
   { UserName = ""
@@ -34,8 +34,10 @@ let update msg model =
   | RepeatPassword x -> set { model.RegisterForm with RepeatPassword = x }, Cmd.none
   | Register form -> 
     model, promise register form Registered
-  | Registered (Ok ()) ->
-    model, redirect Home
+  | Registered (Ok creds) ->
+    { model with State = LoggedIn creds }, redirect Home
+  | Registered (Error _) ->
+    model, Cmd.none
 
 let view model dispatch = [
   h2 [] [ str "Create a New Account" ]
