@@ -9,6 +9,8 @@ nuget Fable.JsonConverter
 nuget FSharp.Core
 nuget Suave
 nuget jose-jwt
+nuget SQLProvider
+nuget Npgsql
 
 clitool dotnet-fable
 clitool Microsoft.DotNet.Watcher.Tools

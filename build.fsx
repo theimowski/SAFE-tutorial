@@ -65,6 +65,15 @@ Target "Run" (fun () ->
   |> ignore
 )
 
+Target "SqlProvider" (fun () ->
+  let targetDir = serverPath </> "sqlprovider_dlls"
+  CleanDir targetDir
+  !! "packages/Npgsql/lib/netstandard2.0/Npgsql.dll"
+  ++ "packages/System.Threading.Tasks.Extensions/lib/netstandard2.0/System.Threading.Tasks.Extensions.dll"
+  ++ "packages/System.Data.Common/lib/netstandard1.2/System.Data.Common.dll"
+  |> CopyTo targetDir
+)
+
 "Clean"
   ==> "InstallDotNetCore"
   =?> ("InstallClient", not <| hasBuildParam "skip")
