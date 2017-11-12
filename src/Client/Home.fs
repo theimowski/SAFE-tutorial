@@ -8,8 +8,20 @@ open MusicStore.Model
 open MusicStore.Navigation
 open MusicStore.View
 
-let view = [ 
-  str "Home"
-  br []
-  aHref "Genres" Genres
+let view model = [ 
+  img [ Src "/home-showcase.png" ]
+  h2 [] [ str "Fresh off the grill" ]
+  ul [ Id "album-list" ] (
+      model.Albums 
+      |> Seq.sortByDescending (fun a -> a.Id)
+      |> Seq.take 5
+      |> Seq.toList
+      |> List.map (fun album -> 
+        li [] [
+          a [ Href (hash (Album album.Id))] [
+            img [ Src album.ArtUrl ]
+            str album.Title
+          ]
+        ]
+      ))
 ]

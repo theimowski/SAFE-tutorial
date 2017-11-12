@@ -125,8 +125,7 @@ let viewMain model dispatch =
     viewLoading
   else
     match model.Route with 
-    | Home        -> Home.view
-    | Genres      -> Genres.view model
+    | Home        -> Home.view model
     | Manage      -> 
       admin model (Manage.view model (ManageMsg >> dispatch))
     | NewAlbum    -> 
@@ -156,7 +155,6 @@ let navView model =
   let cartTotal = CartItem.totalCount model.CartItems
   let tabs =
     [ yield "Home", Home
-      yield "Store", Genres
       if cartTotal > 0 then
         yield sprintf "Cart (%d)" cartTotal, Cart
       match model.State with
@@ -178,6 +176,11 @@ let userView model dispatch =
       yield aHref "Log on" Logon
   ]
 
+let genresView model =
+  model.Genres 
+  |> List.map (fun g -> g.Name, (Genre g.Name))
+  |> list [ Id "categories" ]
+
 let view model dispatch =
   div [] [
     div [ Id "header" ] [ 
@@ -187,6 +190,8 @@ let view model dispatch =
       navView model
       userView model dispatch
     ]
+
+    genresView model
 
     div [ Id "main" ] (viewMain model dispatch)
 
