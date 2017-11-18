@@ -60,3 +60,25 @@ module Form =
        Email    : string
        Password : string
        RepeatPassword : string }
+
+
+module Api2 =
+  type Method =
+  | Get
+
+  type Endpoint<'req, 'res> = 
+    { Method : Method
+      Uri    : string }
+
+  [<RequireQualifiedAccess>]
+  type Response<'a> =
+  | Ok of 'a
+  | Exception of string
+
+  let mk<'req, 'res> meth uri : Endpoint<'req, 'res> =
+    { Method = meth 
+      Uri    = uri }
+
+  module Genres =
+    let uri = "/api2/genres"
+    let get = mk<unit, Genre[]> Get uri

@@ -73,3 +73,37 @@ let promise req args f =
 let (|LoggedAsAdmin|_|) = function
 | LoggedIn { Role = Admin; Token = t } -> Some t
 | _ -> None
+
+let meth = function
+| Api2.Get -> HttpMethod.GET
+
+
+let [<PassGenerics>] handleResp (res : Response) =
+  if res.Status = 200 then
+    res.text()
+    |> Promise.map (ofJson<'res> >> Api2.Response.Ok)
+  else
+    let msg =
+      if res.Status = 500 then
+        res.text()
+      else
+        res.text()
+        |> Promise.map (sprintf "unhandled code: %d, body: %s" res.Status)
+    
+    Promise.map Api2.Response.Exception msg
+    
+let [<PassGenerics>]  promise' (endpoint : Api2.Endpoint<'req, 'res>) (arg : 'req) =
+  fetch endpoint.Uri [ 
+    Method (meth endpoint.Method) 
+    arg |> toJson |> U3.Case3 |> Body
+  ]
+  |> Promise.bind handleResp
+
+let [<PassGenerics>] promise2 
+  (endpoint : Api2.Endpoint<'req, 'res>) args msgF =
+
+  Cmd.ofPromise 
+    (promise' endpoint)
+    args 
+    msgF 
+    (fun e -> Api2.Response.Exception e.Message |> msgF)
