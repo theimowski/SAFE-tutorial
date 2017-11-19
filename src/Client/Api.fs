@@ -10,6 +10,7 @@ open Elmish
 open MusicStore.DTO
 open MusicStore.Model
 open System.Net.Http
+open Fable.PowerPack.Fetch.Fetch_types
 
 let albums () =
   fetchAs<Album[]> "/api/albums" []
@@ -76,9 +77,10 @@ let (|LoggedAsAdmin|_|) = function
 
 let meth = function
 | Api2.Get -> HttpMethod.GET
+| Api2.Post -> HttpMethod.POST
 
 
-let [<PassGenerics>] handleResp (res : Response) =
+let [<PassGenerics>] handleResp<'res> (res : Response) =
   if res.Status = 200 then
     res.text()
     |> Promise.map (ofJson<'res> >> Api2.Response.Ok)
@@ -92,12 +94,16 @@ let [<PassGenerics>] handleResp (res : Response) =
     
     Promise.map Api2.Response.Exception msg
     
-let [<PassGenerics>]  promise' (endpoint : Api2.Endpoint<'req, 'res>) (arg : 'req) =
+let [<PassGenerics>]  promise' 
+  (endpoint : Api2.Endpoint<'req, 'res>) (arg : 'req) =
   fetch endpoint.Uri [ 
-    Method (meth endpoint.Method) 
-    arg |> toJson |> U3.Case3 |> Body
+    yield Method (meth endpoint.Method)
+    match box arg with
+    | :? unit -> ()
+    | _ ->
+      yield arg |> toJson |> U3.Case3 |> Body
   ]
-  |> Promise.bind handleResp
+  |> Promise.bind handleResp<'res>
 
 let [<PassGenerics>] promise2 
   (endpoint : Api2.Endpoint<'req, 'res>) args msgF =

@@ -65,20 +65,26 @@ module Form =
 module Api2 =
   type Method =
   | Get
+  | Post
 
-  type Endpoint<'req, 'res> = 
+  type Endpoint<'uri, 'req, 'res> = 
     { Method : Method
-      Uri    : string }
+      Uri    : 'uri -> string }
 
   [<RequireQualifiedAccess>]
   type Response<'a> =
   | Ok of 'a
   | Exception of string
 
-  let mk<'req, 'res> meth uri : Endpoint<'req, 'res> =
+  let mk<'req, 'res> meth (uri : 'uri -> string) : Endpoint<'uri, 'req, 'res> =
     { Method = meth 
       Uri    = uri }
 
+  module Cart =
+    let uri = sprintf "/api2/cart/%s"
+    let add = mk<int, CartItem[]> Post uri
+
+
   module Genres =
-    let uri = "/api2/genres"
+    let uri = fun _ -> "/api2/genres"
     let get = mk<unit, Genre[]> Get uri

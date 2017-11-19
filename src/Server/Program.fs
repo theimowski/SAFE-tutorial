@@ -768,6 +768,7 @@ let register ctx = async {
 let app =
   choose [
     Genres.webpart
+    Cart.webpart
 
     path "/api/albums" >=> albumsApi
     pathScan "/api/album/%d" album

@@ -13,7 +13,7 @@ open MusicStore.View
 
 type Msg =
 | AddToCart of int
-| AddedToCart of Result<CartItem[], exn>
+| AddedToCart of Api2.Response<CartItem[]>
 
 let update msg model =
   match msg with
@@ -26,10 +26,10 @@ let update msg model =
         let uid = System.Guid.NewGuid().ToString()
         let model = { model with State = CartIdOnly uid }
         uid, model
-    model, promise addToCart (cartId, albumId) AddedToCart
-  | AddedToCart (Ok items) ->
+    model, promise2 (Api2.Cart.add cartId) albumId AddedToCart
+  | AddedToCart (Api2.Ok items) ->
     { model with CartItems = List.ofArray items}, Cmd.none
-  | AddedToCart (Error _) ->
+  | AddedToCart (Api2.Exception _) ->
     model, Cmd.none
 
 let labeled caption elem =
