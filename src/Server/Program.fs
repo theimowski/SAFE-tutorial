@@ -594,6 +594,7 @@ open System.Windows.Input
 open System.Diagnostics.Tracing
 open Newtonsoft.Json.Serialization
 open Microsoft.VisualBasic.CompilerServices
+open MusicStore.DTO.ApiRemoting
 
 let passHash (pass: string) =
   use sha = Security.Cryptography.SHA256.Create()
@@ -768,6 +769,7 @@ let register ctx = async {
 let app =
   choose [
     Genres.webpart
+    Bestsellers.webpart
 
     path "/api/albums" >=> albumsApi
     pathScan "/api/album/%d" album

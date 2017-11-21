@@ -13,6 +13,7 @@ type Model =
     Genres       : Genre list
     Artists      : Artist list
     Albums       : Album list
+    Bestsellers  : Bestseller list
     State        : State
     CartItems    : CartItem list
     NewAlbum     : Form.NewAlbum

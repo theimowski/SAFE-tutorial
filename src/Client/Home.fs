@@ -12,9 +12,9 @@ let view model = [
   img [ Src "/home-showcase.png" ]
   h2 [] [ str "Fresh off the grill" ]
   ul [ Id "album-list" ] (
-      model.Albums 
+      model.Bestsellers 
       |> Seq.sortByDescending (fun a -> a.Id)
-      |> Seq.take 5
+      |> fun x -> if Seq.length x > 5 then Seq.take 5 x else x
       |> Seq.toList
       |> List.map (fun album -> 
         li [] [

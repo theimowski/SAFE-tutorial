@@ -76,8 +76,10 @@ let (|LoggedAsAdmin|_|) = function
 
 module Remoting =
   open Fable.Remoting.Client
-  
-  let genres = Proxy.createWithBuilder<ApiRemoting.Genres> (sprintf "/api/%s/%s") 
+  let genres = 
+    Proxy.createWithBuilder<ApiRemoting.Genres> (sprintf "/api/%s/%s")
+  let bestsellers = 
+    Proxy.createWithBuilder<ApiRemoting.Bestsellers> (sprintf "/api/%s/%s")
 
   let promise req args resF =
     Cmd.ofAsync req args (Ok >> resF) (Error >> resF)

@@ -9,9 +9,9 @@ open MusicStore.DTO
 open MusicStore.Model
 open MusicStore.Navigation
 open MusicStore.View
+open MusicStore.Api.Remoting
 
 type Msg =
-| AlbumsFetched of Result<Album[], exn>
 | ManageMsg of Manage.Msg
 | NewAlbumMsg of NewAlbum.Msg
 | EditAlbumMsg of EditAlbum.Msg
@@ -21,12 +21,14 @@ type Msg =
 | CartMsg of Cart.Msg
 | LogOff
 | GenresFetched of Result<Genre[], exn>
+| BestsellersFetched of Result<Bestseller[], exn>
 
 let init route =
   let route = defaultArg route Home
   let model =
     { Route        = route
       Artists      = []
+      Bestsellers  = []
       Genres       = []
       Albums       = []
       State        = LoggedOff
@@ -39,8 +41,8 @@ let init route =
   
   let cmd =
     Cmd.batch [
-      promise albums () AlbumsFetched
-      Remoting.promise Remoting.genres.get () GenresFetched
+      promise genres.get () GenresFetched
+      promise bestsellers.get () BestsellersFetched
     ]
   model, cmd
 
@@ -58,32 +60,13 @@ let urlUpdate (result:Option<Route>) model =
 
 let update msg (model : Model) =
   match msg with
-  | AlbumsFetched (Ok albums) ->
-    let albums = List.ofArray albums
-    let genres =
-      albums
-      |> List.map (fun a -> a.Genre)
-      |> List.distinct
-    let artists =
-      albums
-      |> List.map (fun a -> a.Artist)
-      |> List.distinct
-    let newAlbum = 
-      { model.NewAlbum with
-          Genre  = genres.[0].Id
-          Artist = artists.[0].Id }
-    let model =
-      { model with
-          NewAlbum = newAlbum
-          Albums   = albums
-          //Genres   = genres
-          Artists  = artists }
-    model, Cmd.none
   | GenresFetched (Ok genres) ->
     { model with Genres = Array.toList genres }, Cmd.none
   | GenresFetched (Error e) ->
     model, Cmd.none
-  | AlbumsFetched (Error _) ->
+  | BestsellersFetched (Ok bestsellers) ->
+    { model with Bestsellers = Array.toList bestsellers }, Cmd.none
+  | BestsellersFetched (Error e) ->
     model, Cmd.none
   | ManageMsg msg ->
     let m, msg = Manage.update msg model
@@ -131,32 +114,29 @@ let admin model view =
   | _ -> viewUnauthorized
 
 let viewMain model dispatch =
-  if List.isEmpty model.Albums then 
-    viewLoading
-  else
-    match model.Route with 
-    | Home        -> Home.view model
-    | Manage      -> 
-      admin model (Manage.view model (ManageMsg >> dispatch))
-    | NewAlbum    -> 
-      admin model (NewAlbum.view model (NewAlbumMsg >> dispatch))
-    | Logon       -> Logon.view model (LogonMsg >> dispatch)
-    | Register    -> Register.view model (RegisterMsg >> dispatch)
-    | Cart        -> Cart.view model (CartMsg >> dispatch)
-    | Woops       -> viewNotFound
-    | Genre genre ->
-      match model.Genres |> List.tryFind (fun g -> g.Name = genre) with
-      | Some genre -> Genre.view genre model
-      | None       -> viewNotFound
-    | Album id    ->
-      match model.Albums |> List.tryFind (fun a -> a.Id = id) with
-      | Some album -> Album.view album model (AlbumMsg >> dispatch)
-      | None       -> viewNotFound
-    | EdAlbum id ->
-      match model.Albums |> List.tryFind (fun a -> a.Id = id) with
-      | Some album -> 
-        admin model (EditAlbum.view album model (EditAlbumMsg >> dispatch))
-      | None       -> viewNotFound
+  match model.Route with 
+  | Home        -> Home.view model
+  | Manage      -> 
+    admin model (Manage.view model (ManageMsg >> dispatch))
+  | NewAlbum    -> 
+    admin model (NewAlbum.view model (NewAlbumMsg >> dispatch))
+  | Logon       -> Logon.view model (LogonMsg >> dispatch)
+  | Register    -> Register.view model (RegisterMsg >> dispatch)
+  | Cart        -> Cart.view model (CartMsg >> dispatch)
+  | Woops       -> viewNotFound
+  | Genre genre ->
+    match model.Genres |> List.tryFind (fun g -> g.Name = genre) with
+    | Some genre -> Genre.view genre model
+    | None       -> viewNotFound
+  | Album id    ->
+    match model.Albums |> List.tryFind (fun a -> a.Id = id) with
+    | Some album -> Album.view album model (AlbumMsg >> dispatch)
+    | None       -> viewNotFound
+  | EdAlbum id ->
+    match model.Albums |> List.tryFind (fun a -> a.Id = id) with
+    | Some album -> 
+      admin model (EditAlbum.view album model (EditAlbumMsg >> dispatch))
+    | None       -> viewNotFound
 
 let blank desc url =
   a [ Href url; Target "_blank" ] [ str desc ]

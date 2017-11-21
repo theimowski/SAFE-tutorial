@@ -4,6 +4,11 @@ type Genre =
   { Id   : int
     Name : string }
 
+type Bestseller =
+  { Id       : int
+    Title    : string
+    ArtUrl   : string }
+
 type Artist =
   { Id   : int
     Name : string }
@@ -62,6 +67,12 @@ module Form =
        RepeatPassword : string }
 
 module ApiRemoting =
+  let routeBuilder = sprintf "/api/%s/%s"
+
   type Genres = {
     get : unit -> Async<Genre[]>
+  }
+
+  type Bestsellers = {
+    get : unit -> Async<Bestseller[]>
   }
