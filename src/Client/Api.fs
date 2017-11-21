@@ -73,3 +73,11 @@ let promise req args f =
 let (|LoggedAsAdmin|_|) = function
 | LoggedIn { Role = Admin; Token = t } -> Some t
 | _ -> None
+
+module Remoting =
+  open Fable.Remoting.Client
+  
+  let genres = Proxy.createWithBuilder<ApiRemoting.Genres> (sprintf "/api/%s/%s") 
+
+  let promise req args resF =
+    Cmd.ofAsync req args (Ok >> resF) (Error >> resF)

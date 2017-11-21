@@ -4,3 +4,4 @@ dotnet-fable
 Fable.Elmish
 Fable.Elmish.Browser
 Fable.Elmish.React
+Fable.Remoting.Client

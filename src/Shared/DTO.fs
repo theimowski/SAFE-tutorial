@@ -60,3 +60,8 @@ module Form =
        Email    : string
        Password : string
        RepeatPassword : string }
+
+module ApiRemoting =
+  type Genres = {
+    get : unit -> Async<Genre[]>
+  }

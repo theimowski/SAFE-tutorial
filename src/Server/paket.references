@@ -5,3 +5,4 @@ jose-jwt
 Microsoft.DotNet.Watcher.Tools
 SQLProvider
 Npgsql
+Fable.Remoting.Suave

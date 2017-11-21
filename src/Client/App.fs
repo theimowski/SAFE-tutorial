@@ -20,6 +20,7 @@ type Msg =
 | AlbumMsg of Album.Msg
 | CartMsg of Cart.Msg
 | LogOff
+| GenresFetched of Result<Genre[], exn>
 
 let init route =
   let route = defaultArg route Home
@@ -36,7 +37,12 @@ let init route =
       RegisterForm = Register.init()
       LogonMsg     = None }
   
-  model, promise albums () AlbumsFetched
+  let cmd =
+    Cmd.batch [
+      promise albums () AlbumsFetched
+      Remoting.promise Remoting.genres.get () GenresFetched
+    ]
+  model, cmd
 
 let urlUpdate (result:Option<Route>) model =
   match result with
@@ -70,8 +76,12 @@ let update msg (model : Model) =
       { model with
           NewAlbum = newAlbum
           Albums   = albums
-          Genres   = genres
+          //Genres   = genres
           Artists  = artists }
+    model, Cmd.none
+  | GenresFetched (Ok genres) ->
+    { model with Genres = Array.toList genres }, Cmd.none
+  | GenresFetched (Error e) ->
     model, Cmd.none
   | AlbumsFetched (Error _) ->
     model, Cmd.none
