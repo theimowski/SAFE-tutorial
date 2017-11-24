@@ -10,6 +10,8 @@ open MusicStore.Model
 open MusicStore.Navigation
 open MusicStore.View
 open MusicStore.Api.Remoting
+open MusicStore.Navigation
+open Elmish
 
 type Msg =
 | GenresFetched      of WebData<Genre list>
@@ -25,11 +27,27 @@ type Msg =
 | CartMsg of Cart.Msg
 | LogOff
 
+let urlUpdate (result:Option<Route>) model =
+  match result with
+  | Some (Album id) ->
+    { model with 
+        Route         = Album id
+        SelectedAlbum = Loading },
+    promiseWD albums.getById id AlbumFetched
+  | Some Logon ->
+    { model with 
+        Route     = Logon
+        LogonForm = Logon.init ()
+        LogonMsg  = None }, Cmd.none
+  | Some route ->
+    { model with Route = route }, Cmd.none
+  | None ->
+    { model with Route = Woops }, Navigation.modifyUrl (hash Woops)
+
 let init route =
-  let route = defaultArg route Home
 
   let initModel =
-    { Route         = route
+    { Route         = Home
       Genres        = Loading
       Bestsellers   = Loading
       SelectedAlbum = NotAsked
@@ -50,24 +68,12 @@ let init route =
       promiseWD bestsellers.get () BestsellersFetched
     ]
 
-  initModel, initCmd
-
-let urlUpdate (result:Option<Route>) model =
-  match result with
-  | Some (Album id) ->
-    { model with 
-        Route         = Album id
-        SelectedAlbum = Loading },
-    promiseWD albums.getById id AlbumFetched
-  | Some Logon ->
-    { model with 
-        Route     = Logon
-        LogonForm = Logon.init ()
-        LogonMsg  = None }, Cmd.none
-  | Some route ->
-    { model with Route = route }, Cmd.none
+  match route with
+  | Some r ->
+    let model, cmd = urlUpdate (Some r) initModel
+    model, Cmd.batch [ initCmd; cmd ]
   | None ->
-    { model with Route = Woops }, Navigation.modifyUrl (hash Woops)
+    initModel, initCmd
 
 let update msg (model : Model) =
   match msg with
