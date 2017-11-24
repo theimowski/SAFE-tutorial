@@ -9,6 +9,7 @@ let get () =
       Db.ctx().Public.Genres
       |> Seq.toArray
       |> Array.map (fun g -> { Genre.Name = g.Name; Id = g.Genreid })
+      |> Array.toList
   }
 
 let webpart = 

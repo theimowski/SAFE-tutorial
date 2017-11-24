@@ -18,7 +18,7 @@ type Msg =
 let update msg model =
   match msg with
   | Remove album ->
-    match model.State with
+    match model.User with
     | LoggedIn { Name = cartId }
     | CartIdOnly cartId ->
       model, promise removeFromCart (cartId, album.Id) RemovedFromCart

@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../Shared/DTO.fs" />
+    <Compile Include="Common.fs" />
     <Compile Include="Navigation.fs" />
     <Compile Include="Model.fs" />
     <Compile Include="Api.fs" />

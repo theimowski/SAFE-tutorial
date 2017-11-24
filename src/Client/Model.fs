@@ -3,18 +3,19 @@ module MusicStore.Model
 open MusicStore.DTO
 open MusicStore.Navigation
 
-type State =
+type User =
 | LoggedOff
 | CartIdOnly of string
 | LoggedIn of Credentials
 
 type Model = 
-  { Route        : Route
-    Genres       : Genre list
+  { Genres       : WebData<Genre list>
+    Bestsellers  : WebData<Bestseller list>
+    
+    Route        : Route
     Artists      : Artist list
     Albums       : Album list
-    Bestsellers  : Bestseller list
-    State        : State
+    User         : User
     CartItems    : CartItem list
     NewAlbum     : Form.NewAlbum
     EditAlbum    : Form.EditAlbum

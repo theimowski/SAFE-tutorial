@@ -83,3 +83,6 @@ module Remoting =
 
   let promise req args resF =
     Cmd.ofAsync req args (Ok >> resF) (Error >> resF)
+  
+  let promiseWD req args resF =
+    Cmd.ofAsync req args (Ready >> resF) (Failed >> resF)

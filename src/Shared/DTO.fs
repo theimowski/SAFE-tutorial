@@ -70,9 +70,9 @@ module ApiRemoting =
   let routeBuilder = sprintf "/api/%s/%s"
 
   type Genres = {
-    get : unit -> Async<Genre[]>
+    get : unit -> Async<Genre list>
   }
 
   type Bestsellers = {
-    get : unit -> Async<Bestseller[]>
+    get : unit -> Async<Bestseller list>
   }

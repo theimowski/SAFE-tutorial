@@ -7,8 +7,8 @@ let get () =
   async {
     return
       Db.ctx().Public.Bestsellers
-      |> Seq.toArray
-      |> Array.map (fun b -> 
+      |> Seq.toList
+      |> List.map (fun b -> 
         { Bestseller.Id = b.Albumid
           Title  = b.Title
           ArtUrl = b.Albumarturl })

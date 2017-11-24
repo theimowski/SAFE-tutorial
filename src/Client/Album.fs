@@ -19,12 +19,12 @@ let update msg model =
   match msg with
   | AddToCart albumId ->
     let cartId, model =
-      match model.State with
+      match model.User with
       | LoggedIn creds -> creds.Name, model
       | CartIdOnly cartId -> cartId, model
       | LoggedOff -> 
         let uid = System.Guid.NewGuid().ToString()
-        let model = { model with State = CartIdOnly uid }
+        let model = { model with User = CartIdOnly uid }
         uid, model
     model, promise addToCart (cartId, albumId) AddedToCart
   | AddedToCart (Ok items) ->

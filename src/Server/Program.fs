@@ -484,6 +484,16 @@ let OK body : WebPart = fun ctx ->
     return! OK body ctx
   }
 
+let rand = System.Random()
+
+let simulateLatency : WebPart = 
+  warbler (fun _ -> 
+    fun ctx ->
+    async {
+      do! Async.Sleep (rand.Next 2000)
+      return Some ctx
+    })
+
 let getGenres = 
   genres
   |> Seq.map (fun kv -> kv.Value)
@@ -778,6 +788,6 @@ let app =
     path "/api/accounts/register" >=> POST >=> register
 
     Files.browseHome
-  ]
+  ] >=> simulateLatency
 
 startWebServer config app

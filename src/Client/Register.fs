@@ -35,7 +35,7 @@ let update msg model =
   | Register form -> 
     model, promise register form Registered
   | Registered (Ok creds) ->
-    { model with State = LoggedIn creds }, redirect Home
+    { model with User = LoggedIn creds }, redirect Home
   | Registered (Error _) ->
     model, Cmd.none
 

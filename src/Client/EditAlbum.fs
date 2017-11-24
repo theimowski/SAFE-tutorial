@@ -45,7 +45,7 @@ let update msg model =
   | Price p     -> set { model.EditAlbum with Price = p }, Cmd.none
   | EditAlbum a -> 
     let cmd =
-      match model.State with
+      match model.User with
       | LoggedAsAdmin token ->
         Cmd.batch [ promise (edit token) a AlbumUpdated 
                     redirect Manage]
@@ -58,10 +58,8 @@ let update msg model =
 
 
 let view album model dispatch = 
-  let genres = 
-    model.Genres 
-    |> List.map (fun g -> string g.Id, g.Name)
-    |> List.sortBy snd
+  let genres = []
+    
   let artists = 
     model.Artists 
     |> List.map (fun a -> string a.Id, a.Name)

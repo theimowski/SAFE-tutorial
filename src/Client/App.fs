@@ -20,18 +20,19 @@ type Msg =
 | AlbumMsg of Album.Msg
 | CartMsg of Cart.Msg
 | LogOff
-| GenresFetched of Result<Genre[], exn>
-| BestsellersFetched of Result<Bestseller[], exn>
+| GenresFetched      of WebData<Genre list>
+| BestsellersFetched of WebData<Bestseller list>
 
 let init route =
   let route = defaultArg route Home
   let model =
-    { Route        = route
+    { Genres       = Loading
+      Bestsellers  = Loading
+
+      Route        = route
       Artists      = []
-      Bestsellers  = []
-      Genres       = []
       Albums       = []
-      State        = LoggedOff
+      User         = LoggedOff
       CartItems    = []
       NewAlbum     = NewAlbum.init ()
       EditAlbum    = EditAlbum.initEmpty ()
@@ -41,9 +42,10 @@ let init route =
   
   let cmd =
     Cmd.batch [
-      promise genres.get () GenresFetched
-      promise bestsellers.get () BestsellersFetched
+      promiseWD genres.get () GenresFetched
+      promiseWD bestsellers.get () BestsellersFetched
     ]
+    
   model, cmd
 
 let urlUpdate (result:Option<Route>) model =
@@ -60,14 +62,11 @@ let urlUpdate (result:Option<Route>) model =
 
 let update msg (model : Model) =
   match msg with
-  | GenresFetched (Ok genres) ->
-    { model with Genres = Array.toList genres }, Cmd.none
-  | GenresFetched (Error e) ->
-    model, Cmd.none
-  | BestsellersFetched (Ok bestsellers) ->
-    { model with Bestsellers = Array.toList bestsellers }, Cmd.none
-  | BestsellersFetched (Error e) ->
-    model, Cmd.none
+  | GenresFetched genres ->
+    { model with Genres = genres }, Cmd.none
+  | BestsellersFetched bestsellers ->
+    { model with Bestsellers = bestsellers }, Cmd.none
+
   | ManageMsg msg ->
     let m, msg = Manage.update msg model
     m, Cmd.map ManageMsg msg
@@ -91,7 +90,7 @@ let update msg (model : Model) =
     m, Cmd.map CartMsg msg
   | LogOff ->
     { model with 
-        State     = LoggedOff
+        User     = LoggedOff
         CartItems = [] }, Cmd.none
 
 open Fable.Helpers.React
@@ -109,13 +108,13 @@ let viewUnauthorized = [
 ]
 
 let admin model view =
-  match model.State with
+  match model.User with
   | LoggedAsAdmin _ -> view
   | _ -> viewUnauthorized
 
 let viewMain model dispatch =
   match model.Route with 
-  | Home        -> Home.view model
+  | Home        -> Home.view model dispatch
   | Manage      -> 
     admin model (Manage.view model (ManageMsg >> dispatch))
   | NewAlbum    -> 
@@ -125,9 +124,7 @@ let viewMain model dispatch =
   | Cart        -> Cart.view model (CartMsg >> dispatch)
   | Woops       -> viewNotFound
   | Genre genre ->
-    match model.Genres |> List.tryFind (fun g -> g.Name = genre) with
-    | Some genre -> Genre.view genre model
-    | None       -> viewNotFound
+    viewNotFound
   | Album id    ->
     match model.Albums |> List.tryFind (fun a -> a.Id = id) with
     | Some album -> Album.view album model (AlbumMsg >> dispatch)
@@ -147,7 +144,7 @@ let navView model =
     [ yield "Home", Home
       if cartTotal > 0 then
         yield sprintf "Cart (%d)" cartTotal, Cart
-      match model.State with
+      match model.User with
       | LoggedIn { Role = Admin } ->
         yield "Admin", Manage
       | _ -> ()
@@ -157,7 +154,7 @@ let navView model =
 
 let userView model dispatch =
   div [Id "part-user"] [ 
-    match model.State with
+    match model.User with
     | LoggedIn creds ->
       yield str (sprintf "Logged on as %s, " creds.Name)
       yield a [Href (hash Home); onClick dispatch LogOff] [str "Log off"]
@@ -167,9 +164,15 @@ let userView model dispatch =
   ]
 
 let genresView model =
-  model.Genres 
-  |> List.map (fun g -> g.Name, (Genre g.Name))
-  |> list [ Id "categories" ]
+  match model.Genres with
+  | Loading ->
+    img [ Style [ Width "40px" ] ; Id "categories"; Src "Gear.gif" ]
+  | Ready genres ->
+    genres
+    |> List.map (fun g -> g.Name, (Genre g.Name))
+    |> list [ Id "categories" ]
+  | _ ->
+    str "Failed to load genres"
 
 let view model dispatch =
   div [] [

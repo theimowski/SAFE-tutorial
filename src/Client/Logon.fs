@@ -33,7 +33,7 @@ let update msg model =
     model, promise logon form LoggedOn
   | LoggedOn (Ok creds) ->
     let cartCmd =
-      match model.State with
+      match model.User with
       | CartIdOnly oldCartId ->
         promise upgradeCart (oldCartId, creds.Name) CartItemsFetched
       | _ ->
@@ -43,7 +43,7 @@ let update msg model =
         redirect Home
         cartCmd
       ]
-    { model with State = LoggedIn creds }, cmd
+    { model with User = LoggedIn creds }, cmd
   | LoggedOn (Error _) ->
     let msg = "Incorrect Login or Password"
     { model with LogonMsg = Some msg }, Cmd.none
