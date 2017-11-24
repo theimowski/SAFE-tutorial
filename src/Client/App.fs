@@ -11,12 +11,12 @@ open MusicStore.Navigation
 open MusicStore.View
 open MusicStore.Api.Remoting
 open MusicStore.Navigation
-open Elmish
 
 type Msg =
 | GenresFetched      of WebData<Genre list>
 | BestsellersFetched of WebData<Bestseller list>
 | AlbumFetched       of WebData<AlbumDetails option>
+| AlbumsFetched      of WebData<AlbumDetails list>
 
 | ManageMsg of Manage.Msg
 | NewAlbumMsg of NewAlbum.Msg
@@ -34,6 +34,11 @@ let urlUpdate (result:Option<Route>) model =
         Route         = Album id
         SelectedAlbum = Loading },
     promiseWD albums.getById id AlbumFetched
+  | Some (Genre g) ->
+    { model with
+        Route  = Genre g 
+        Albums = Loading },
+    promiseWD albums.getForGenre g AlbumsFetched
   | Some Logon ->
     { model with 
         Route     = Logon
@@ -51,9 +56,9 @@ let init route =
       Genres        = Loading
       Bestsellers   = Loading
       SelectedAlbum = NotAsked
+      Albums        = NotAsked
 
       Artists       = []
-      Albums        = []
       User          = LoggedOff
       CartItems     = []
       NewAlbum      = NewAlbum.init ()
@@ -83,7 +88,9 @@ let update msg (model : Model) =
     { model with Bestsellers = bestsellers }, Cmd.none
   | AlbumFetched album ->
     { model with SelectedAlbum = album }, Cmd.none
-
+  | AlbumsFetched albums ->
+    { model with Albums = albums }, Cmd.none
+ 
   | ManageMsg msg ->
     let m, msg = Manage.update msg model
     m, Cmd.map ManageMsg msg
@@ -136,14 +143,9 @@ let viewMain model dispatch =
   | Register    -> Register.view model (RegisterMsg >> dispatch)
   | Cart        -> Cart.view model (CartMsg >> dispatch)
   | Woops       -> viewNotFound
-  | Genre genre ->
-    viewNotFound
+  | Genre genre -> Genre.view genre model
   | Album id    -> Album.view model (AlbumMsg >> dispatch)
-  | EdAlbum id ->
-    match model.Albums |> List.tryFind (fun a -> a.Id = id) with
-    | Some album -> 
-      admin model (EditAlbum.view album model (EditAlbumMsg >> dispatch))
-    | None       -> viewNotFound
+  | EdAlbum id -> viewNotFound
 
 let blank desc url =
   a [ Href url; Target "_blank" ] [ str desc ]

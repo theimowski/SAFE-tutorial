@@ -13,9 +13,9 @@ type Model =
     Genres        : WebData<Genre list>
     Bestsellers   : WebData<Bestseller list>
     SelectedAlbum : WebData<AlbumDetails option>
+    Albums        : WebData<AlbumDetails list>
 
     Artists       : Artist list
-    Albums        : Album list
     User          : User
     CartItems     : CartItem list
     NewAlbum      : Form.NewAlbum

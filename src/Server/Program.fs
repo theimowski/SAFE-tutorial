@@ -490,7 +490,7 @@ let simulateLatency : WebPart =
   warbler (fun _ -> 
     fun ctx ->
     async {
-      do! Async.Sleep (rand.Next 2000)
+      do! Async.Sleep (rand.Next 1000)
       return Some ctx
     })
 

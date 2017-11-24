@@ -28,9 +28,9 @@ let update msg model =
     { model with EditAlbum = EditAlbum.init album } , Cmd.none
   | AlbumDeleted  (Error _) ->
     model, Cmd.none
-  | AlbumDeleted (Ok id) ->
-    let albums = model.Albums |> List.filter (fun a -> a.Id <> id) 
-    { model with Albums = albums }, Cmd.none
+  //| AlbumDeleted (Ok id) ->
+  //  let albums = model.Albums |> List.filter (fun a -> a.Id <> id) 
+  //  { model with Albums = albums }, Cmd.none
 
 let truncate k (s : string) =
   if s.Length > k then
@@ -59,29 +59,29 @@ let view model dispatch = [
       ]
     ]
     
-    tbody [] [
-      for album in 
-        model.Albums 
-        |> List.sortBy (fun a -> a.Artist.Name + a.Title) do
-      yield tr [] [
-        tdStr (truncate 25 album.Artist.Name)
-        tdStr (truncate 25 album.Title)
-        tdStr album.Genre.Name
-        tdStr (string album.Price)
-        td [ ] [ 
-          a [ Href (hash (EdAlbum album.Id))
-              OnClick (fun _ -> editAlbum album dispatch) ] [ 
-            str "Edit"
-          ]
-          str " | "
-          aHref "Details" (Album album.Id)
-          str " | "          
-          a [ Href (hash Manage)
-              OnClick (fun _ -> deleteAblum album dispatch) ] [ 
-            str "Delete"
-          ]
-        ]
-      ]
-    ]
+    //tbody [] [
+    //  for album in 
+    //    model.Albums 
+    //    |> List.sortBy (fun a -> a.Artist.Name + a.Title) do
+    //  yield tr [] [
+    //    tdStr (truncate 25 album.Artist.Name)
+    //    tdStr (truncate 25 album.Title)
+    //    tdStr album.Genre.Name
+    //    tdStr (string album.Price)
+    //    td [ ] [ 
+    //      a [ Href (hash (EdAlbum album.Id))
+    //          OnClick (fun _ -> editAlbum album dispatch) ] [ 
+    //        str "Edit"
+    //      ]
+    //      str " | "
+    //      aHref "Details" (Album album.Id)
+    //      str " | "          
+    //      a [ Href (hash Manage)
+    //          OnClick (fun _ -> deleteAblum album dispatch) ] [ 
+    //        str "Delete"
+    //      ]
+    //    ]
+    //  ]
+    //]
   ]
 ]

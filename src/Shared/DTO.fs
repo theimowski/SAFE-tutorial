@@ -78,7 +78,8 @@ module ApiRemoting =
   let routeBuilder = sprintf "/api/%s/%s"
 
   type Albums = {
-    getById : int -> Async<AlbumDetails option>
+    getById     : int -> Async<AlbumDetails option>
+    getForGenre : string -> Async<AlbumDetails list>
   }
 
   type Genres = {

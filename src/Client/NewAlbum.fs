@@ -42,8 +42,8 @@ let update msg model =
                     redirect Manage]
       | _ -> Cmd.none
     model, cmd
-  | AlbumCreated (Ok album) -> 
-    { model with Albums = album :: model.Albums }, Cmd.none
+  //| AlbumCreated (Ok album) -> 
+  //  { model with Albums = album :: model.Albums }, Cmd.none
   | AlbumCreated _ -> model, Cmd.none
 
 let view model dispatch = 

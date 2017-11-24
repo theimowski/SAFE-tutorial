@@ -51,9 +51,9 @@ let update msg model =
                     redirect Manage]
       | _ -> Cmd.none
     model, cmd
-  | AlbumUpdated (Ok album) ->
-    let albums' = model.Albums |> List.filter (fun a -> a.Id <> album.Id) 
-    { model with Albums = album :: albums' }, Cmd.none
+  //| AlbumUpdated (Ok album) ->
+  //  let albums' = model.Albums |> List.filter (fun a -> a.Id <> album.Id) 
+  //  { model with Albums = album :: albums' }, Cmd.none
   | AlbumUpdated _ -> model, Cmd.none
 
 
