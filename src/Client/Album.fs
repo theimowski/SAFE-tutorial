@@ -38,16 +38,21 @@ let labeled caption elem =
     elem
   ]
 
-let view album model dispatch = [
-  h2 [] [ str (sprintf "%s - %s" album.Artist.Name album.Title) ]
-  p [] [ img [ Src album.ArtUrl ] ]
-  div [ Id "album-details" ] [
-    labeled "Artist: " (str album.Artist.Name)
-    labeled "Title: " (str album.Title)
-    labeled "Genre: " (aHref album.Genre.Name (Genre album.Genre.Name))
-    labeled "Price: " ((str (album.Price.ToString())))
-    p [ ClassName "button"; onClick dispatch (AddToCart album.Id) ] [
-      a [ Href (hash Cart) ] [ str "Add to cart" ]
+let view model dispatch = 
+  match model.SelectedAlbum with
+  | Ready (Some album) ->
+    [ h2 [] [ str (sprintf "%s - %s" album.Artist album.Title) ]
+      p [] [ img [ Src album.ArtUrl ] ]
+      div [ Id "album-details" ] [
+        labeled "Artist: " (str album.Artist)
+        labeled "Title: " (str album.Title)
+        labeled "Genre: " (aHref album.Genre (Genre album.Genre))
+        labeled "Price: " ((str (album.Price.ToString())))
+        p [ ClassName "button"; onClick dispatch (AddToCart album.Id) ] [
+          a [ Href (hash Cart) ] [ str "Add to cart" ]
+        ]
+      ]
     ]
-  ]
-]
+  | Ready None -> viewNotFound
+  | Loading -> [ gear "album-details" ]
+  | _ -> [ str "Failed to fetch album" ]

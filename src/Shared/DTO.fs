@@ -21,6 +21,14 @@ type Album =
     Price    : decimal
     ArtUrl   : string }
 
+type AlbumDetails =
+  { Id       : int
+    Genre    : string
+    Artist   : string
+    Title    : string
+    Price    : decimal
+    ArtUrl   : string }
+
 type Role =
 | Admin
 | StandardUser
@@ -68,6 +76,10 @@ module Form =
 
 module ApiRemoting =
   let routeBuilder = sprintf "/api/%s/%s"
+
+  type Albums = {
+    getById : int -> Async<AlbumDetails option>
+  }
 
   type Genres = {
     get : unit -> Async<Genre list>

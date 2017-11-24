@@ -16,7 +16,7 @@ let albums () =
 
 let authHeader (token : string) = Authorization ("Bearer " + token) 
 
-let delete token album =
+let delete token (album : Album) =
   fetchAs<int> 
     (sprintf "/api/album/%d" album.Id) 
     [ Method HttpMethod.DELETE
@@ -76,6 +76,9 @@ let (|LoggedAsAdmin|_|) = function
 
 module Remoting =
   open Fable.Remoting.Client
+  
+  let albums = 
+    Proxy.createWithBuilder<ApiRemoting.Albums> (sprintf "/api/%s/%s")
   let genres = 
     Proxy.createWithBuilder<ApiRemoting.Genres> (sprintf "/api/%s/%s")
   let bestsellers = 

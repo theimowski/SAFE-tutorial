@@ -29,7 +29,7 @@ let update msg model =
   | AlbumDeleted  (Error _) ->
     model, Cmd.none
   | AlbumDeleted (Ok id) ->
-    let albums = List.filter (fun a -> a.Id <> id) model.Albums
+    let albums = model.Albums |> List.filter (fun a -> a.Id <> id) 
     { model with Albums = albums }, Cmd.none
 
 let truncate k (s : string) =
@@ -40,7 +40,7 @@ let truncate k (s : string) =
 let editAlbum album dispatch =
   dispatch (EditAlbumMsg album)
 
-let deleteAblum album dispatch =
+let deleteAblum (album : Album) dispatch =
   let msg = sprintf "Confirm delete album '%s'?" album.Title
   if Fable.Import.Browser.window.confirm msg then
     dispatch (DeleteAlbum album)

@@ -31,3 +31,9 @@ let select props options selected =
     |> List.map (fun (v,txt) -> 
       option [Value v; Selected (v = selected) ] [str txt])
   select props options
+
+let viewNotFound = [
+  str "Woops... requested resource was not found."
+]
+
+let gear id = img [ Style [ Width "40px" ] ; Id id; Src "Gear.gif" ]

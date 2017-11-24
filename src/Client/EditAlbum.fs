@@ -52,7 +52,7 @@ let update msg model =
       | _ -> Cmd.none
     model, cmd
   | AlbumUpdated (Ok album) ->
-    let albums' = List.filter (fun a -> a.Id <> album.Id) model.Albums
+    let albums' = model.Albums |> List.filter (fun a -> a.Id <> album.Id) 
     { model with Albums = album :: albums' }, Cmd.none
   | AlbumUpdated _ -> model, Cmd.none
 

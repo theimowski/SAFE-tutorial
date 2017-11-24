@@ -29,7 +29,7 @@ let view model dispatch = [
         ]
     ))
   | Loading ->
-    yield img [ Style [ Width "40px" ] ; Id "album-list"; Src "Gear.gif" ]
+    yield gear "album-list"
   | _ ->
     yield str "Failed to fetch bestsellers"
 ]

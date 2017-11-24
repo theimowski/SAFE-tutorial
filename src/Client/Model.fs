@@ -9,16 +9,17 @@ type User =
 | LoggedIn of Credentials
 
 type Model = 
-  { Genres       : WebData<Genre list>
-    Bestsellers  : WebData<Bestseller list>
-    
-    Route        : Route
-    Artists      : Artist list
-    Albums       : Album list
-    User         : User
-    CartItems    : CartItem list
-    NewAlbum     : Form.NewAlbum
-    EditAlbum    : Form.EditAlbum
-    LogonForm    : Form.Logon
-    RegisterForm : Form.Register
-    LogonMsg     : string option }
+  { Route         : Route
+    Genres        : WebData<Genre list>
+    Bestsellers   : WebData<Bestseller list>
+    SelectedAlbum : WebData<AlbumDetails option>
+
+    Artists       : Artist list
+    Albums        : Album list
+    User          : User
+    CartItems     : CartItem list
+    NewAlbum      : Form.NewAlbum
+    EditAlbum     : Form.EditAlbum
+    LogonForm     : Form.Logon
+    RegisterForm  : Form.Register
+    LogonMsg      : string option }

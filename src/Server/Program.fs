@@ -435,7 +435,7 @@ let mutable albums =
     5, 277, "Ring My Bell", 8.99M, "/placeholder.gif"
   ]
   |> List.mapi (fun i (gid, aid, title, price, art) -> 
-      let album =
+      let album : Album =
         { Id       = i + 1
           Genre    = Map.find gid genres
           Artist   = Map.find aid artists
@@ -547,7 +547,7 @@ let addAlbum (ctx : HttpContext) = async {
   let artist = Map.find newAlbum.Artist artists
   let genre  = Map.find newAlbum.Genre genres
 
-  let album =
+  let album : Album =
     { Id     = id
       Artist = artist
       Genre  = genre
@@ -586,7 +586,7 @@ let updateAlbum id ctx = async {
   let artist = Map.find editedAlbum.Artist artists
   let genre  = Map.find editedAlbum.Genre genres
 
-  let album =
+  let album : Album =
     { Id     = editedAlbum.Id
       Artist = artist
       Genre  = genre
@@ -778,6 +778,7 @@ let register ctx = async {
 
 let app =
   choose [
+    Albums.webpart
     Genres.webpart
     Bestsellers.webpart
 

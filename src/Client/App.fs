@@ -12,6 +12,10 @@ open MusicStore.View
 open MusicStore.Api.Remoting
 
 type Msg =
+| GenresFetched      of WebData<Genre list>
+| BestsellersFetched of WebData<Bestseller list>
+| AlbumFetched       of WebData<AlbumDetails option>
+
 | ManageMsg of Manage.Msg
 | NewAlbumMsg of NewAlbum.Msg
 | EditAlbumMsg of EditAlbum.Msg
@@ -20,41 +24,46 @@ type Msg =
 | AlbumMsg of Album.Msg
 | CartMsg of Cart.Msg
 | LogOff
-| GenresFetched      of WebData<Genre list>
-| BestsellersFetched of WebData<Bestseller list>
 
 let init route =
   let route = defaultArg route Home
-  let model =
-    { Genres       = Loading
-      Bestsellers  = Loading
 
-      Route        = route
-      Artists      = []
-      Albums       = []
-      User         = LoggedOff
-      CartItems    = []
-      NewAlbum     = NewAlbum.init ()
-      EditAlbum    = EditAlbum.initEmpty ()
-      LogonForm    = Logon.init ()
-      RegisterForm = Register.init()
-      LogonMsg     = None }
-  
-  let cmd =
+  let initModel =
+    { Route         = route
+      Genres        = Loading
+      Bestsellers   = Loading
+      SelectedAlbum = NotAsked
+
+      Artists       = []
+      Albums        = []
+      User          = LoggedOff
+      CartItems     = []
+      NewAlbum      = NewAlbum.init ()
+      EditAlbum     = EditAlbum.initEmpty ()
+      LogonForm     = Logon.init ()
+      RegisterForm  = Register.init()
+      LogonMsg      = None }
+
+  let initCmd =
     Cmd.batch [
       promiseWD genres.get () GenresFetched
       promiseWD bestsellers.get () BestsellersFetched
     ]
-    
-  model, cmd
+
+  initModel, initCmd
 
 let urlUpdate (result:Option<Route>) model =
   match result with
+  | Some (Album id) ->
+    { model with 
+        Route         = Album id
+        SelectedAlbum = Loading },
+    promiseWD albums.getById id AlbumFetched
   | Some Logon ->
     { model with 
-        Route = Logon
+        Route     = Logon
         LogonForm = Logon.init ()
-        LogonMsg = None }, Cmd.none
+        LogonMsg  = None }, Cmd.none
   | Some route ->
     { model with Route = route }, Cmd.none
   | None ->
@@ -66,6 +75,8 @@ let update msg (model : Model) =
     { model with Genres = genres }, Cmd.none
   | BestsellersFetched bestsellers ->
     { model with Bestsellers = bestsellers }, Cmd.none
+  | AlbumFetched album ->
+    { model with SelectedAlbum = album }, Cmd.none
 
   | ManageMsg msg ->
     let m, msg = Manage.update msg model
@@ -99,10 +110,6 @@ open Fable.Import.Browser
 
 let viewLoading = [ str "Loading..." ]
 
-let viewNotFound = [
-  str "Woops... requested resource was not found."
-]
-
 let viewUnauthorized = [
   str "Woops... you're not allowed to do this."
 ]
@@ -125,10 +132,7 @@ let viewMain model dispatch =
   | Woops       -> viewNotFound
   | Genre genre ->
     viewNotFound
-  | Album id    ->
-    match model.Albums |> List.tryFind (fun a -> a.Id = id) with
-    | Some album -> Album.view album model (AlbumMsg >> dispatch)
-    | None       -> viewNotFound
+  | Album id    -> Album.view model (AlbumMsg >> dispatch)
   | EdAlbum id ->
     match model.Albums |> List.tryFind (fun a -> a.Id = id) with
     | Some album -> 
@@ -166,7 +170,7 @@ let userView model dispatch =
 let genresView model =
   match model.Genres with
   | Loading ->
-    img [ Style [ Width "40px" ] ; Id "categories"; Src "Gear.gif" ]
+    gear "categories"
   | Ready genres ->
     genres
     |> List.map (fun g -> g.Name, (Genre g.Name))
