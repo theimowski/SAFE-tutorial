@@ -89,3 +89,7 @@ module ApiRemoting =
   type Bestsellers = {
     get : unit -> Async<Bestseller list>
   }
+
+  type Account = {
+    logon : Form.Logon -> Async<Credentials option>
+  }

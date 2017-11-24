@@ -600,11 +600,6 @@ let updateAlbum id ctx = async {
 }
 
 open System
-open System.Windows.Input
-open System.Diagnostics.Tracing
-open Newtonsoft.Json.Serialization
-open Microsoft.VisualBasic.CompilerServices
-open MusicStore.DTO.ApiRemoting
 
 let passHash (pass: string) =
   use sha = Security.Cryptography.SHA256.Create()
@@ -613,32 +608,6 @@ let passHash (pass: string) =
   |> Array.map (fun b -> b.ToString("x2"))
   |> String.concat ""
 
-
-let logon ctx = async {
-  let form =
-    ctx.request.rawForm
-    |> System.Text.Encoding.UTF8.GetString
-    |> ServerCode.FableJson.ofJson<Form.Logon>
-  
-  let user =
-    users
-    |> Seq.map (fun kv -> kv.Value)
-    |> Seq.tryFind (fun u -> u.Name = form.UserName &&
-                             u.Password = passHash form.Password)
-
-  match user with
-  | Some user ->
-    let rights : ServerCode.Auth.UserRights = 
-      { UID  = Guid.NewGuid()
-        Role = user.Role }
-    let user : MusicStore.DTO.Credentials =
-      { Name  = user.Name
-        Token = ServerCode.Auth.encode rights
-        Role  = user.Role }
-    return! (OK (ServerCode.FableJson.toJson user) ctx)
-  | None ->
-    return! RequestErrors.UNAUTHORIZED "Invalid username or password" ctx
-}
 
 let album id =
   choose [
@@ -778,13 +747,13 @@ let register ctx = async {
 
 let app =
   choose [
+    Account.webpart
     Albums.webpart
     Genres.webpart
     Bestsellers.webpart
 
     path "/api/albums" >=> albumsApi
     pathScan "/api/album/%d" album
-    path "/api/account/logon" >=> logon
     pathScan "/api/cart/%s" cart
     path "/api/accounts/register" >=> POST >=> register
 

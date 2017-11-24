@@ -34,12 +34,6 @@ let edit token (album : Form.EditAlbum) =
     requestHeaders [ authHeader token ]
     album |> toJson |> U3.Case3 |> Body]
 
-let logon (form : Form.Logon) =
-  fetchAs<Credentials> (sprintf "/api/account/logon") [
-    Method HttpMethod.POST
-    form |> toJson |> U3.Case3 |> Body
-  ]
-
 let cartItems cartId =
   fetchAs<CartItem[]> (sprintf "/api/cart/%s" cartId) [ ]
 
@@ -83,6 +77,8 @@ module Remoting =
     Proxy.createWithBuilder<ApiRemoting.Genres> (sprintf "/api/%s/%s")
   let bestsellers = 
     Proxy.createWithBuilder<ApiRemoting.Bestsellers> (sprintf "/api/%s/%s")
+  let account = 
+    Proxy.createWithBuilder<ApiRemoting.Account> (sprintf "/api/%s/%s")
 
   let promise req args resF =
     Cmd.ofAsync req args (Ok >> resF) (Error >> resF)

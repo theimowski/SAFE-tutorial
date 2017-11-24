@@ -9,6 +9,7 @@
     <Compile Include="Db.fs" />
     <Compile Include="Auth.fs" />
     <Compile Include="Albums.fs" />
+    <Compile Include="Account.fs" />
     <Compile Include="Bestsellers.fs" />
     <Compile Include="Genres.fs" />
     <Compile Include="Program.fs" />

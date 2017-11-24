@@ -6,18 +6,18 @@ open Fable.Helpers.React.Props
 open Elmish
 
 open MusicStore.Api
+open MusicStore.Api.Remoting
 open MusicStore.DTO
+open MusicStore.DTO.ApiRemoting
 open MusicStore.Model
 open MusicStore.Navigation
 open MusicStore.View
-open System.Net
-open System.Threading
 
 type Msg =
 | UserName         of string
 | Password         of string
 | Logon            of Form.Logon
-| LoggedOn         of Result<Credentials, exn>
+| LoggedOn         of WebData<Credentials option>
 | CartItemsFetched of Result<CartItem[], exn>
 
 let init () : Form.Logon =
@@ -30,21 +30,21 @@ let update msg model =
   | UserName name -> set { model.LogonForm with UserName = name }, Cmd.none
   | Password pass -> set { model.LogonForm with Password = pass }, Cmd.none
   | Logon form -> 
-    model, promise logon form LoggedOn
-  | LoggedOn (Ok creds) ->
-    let cartCmd =
-      match model.User with
-      | CartIdOnly oldCartId ->
-        promise upgradeCart (oldCartId, creds.Name) CartItemsFetched
-      | _ ->
-        promise cartItems creds.Name CartItemsFetched
+    model, promiseWD account.logon form LoggedOn
+  | LoggedOn (Ready (Some creds)) ->
+    //let cartCmd =
+    //  match model.User with
+    //  | CartIdOnly oldCartId ->
+    //    promise upgradeCart (oldCartId, creds.Name) CartItemsFetched
+    //  | _ ->
+    //    promise cartItems creds.Name CartItemsFetched
     let cmd = 
       Cmd.batch [
         redirect Home
-        cartCmd
+        //cartCmd
       ]
     { model with User = LoggedIn creds }, cmd
-  | LoggedOn (Error _) ->
+  | LoggedOn (Ready None) ->
     let msg = "Incorrect Login or Password"
     { model with LogonMsg = Some msg }, Cmd.none
   | CartItemsFetched (Ok items) ->
