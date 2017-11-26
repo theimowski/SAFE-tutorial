@@ -5,3 +5,5 @@ Fable.Elmish
 Fable.Elmish.Browser
 Fable.Elmish.React
 Fable.Remoting.Client
+Fable.Elmish.HMR
+Fable.Elmish.Debugger

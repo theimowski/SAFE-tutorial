@@ -11,6 +11,9 @@ open MusicStore.Navigation
 open MusicStore.View
 open MusicStore.Api.Remoting
 open MusicStore.Navigation
+open MusicStore.DTO.Form
+open MusicStore.DTO.ApiRemoting
+open Fable.PowerPack.PromiseImpl
 
 type Msg =
 | GenresFetched      of WebData<Genre list>
@@ -27,25 +30,29 @@ type Msg =
 | CartMsg of Cart.Msg
 | LogOff
 
+let routeUpdate model = function
+| Album id ->
+  { model with SelectedAlbum = Loading }, promiseWD albums.getById id AlbumFetched
+| Genre g ->
+  { model with Albums = Loading }, promiseWD albums.getForGenre g AlbumsFetched
+| Logon ->
+  { model with LogonForm = Logon.init(); LogonMsg = None }, Cmd.none
+| Manage ->
+  { model with Albums = Loading }, promiseWD albums.getAll () AlbumsFetched
+| _ ->
+  model, Cmd.none
+
 let urlUpdate (result:Option<Route>) model =
+  let model, cmd = 
+    match result with
+    | Some route ->
+      routeUpdate model route 
+    | None ->
+      model, Cmd.none
+
   match result with
-  | Some (Album id) ->
-    { model with 
-        Route         = Album id
-        SelectedAlbum = Loading },
-    promiseWD albums.getById id AlbumFetched
-  | Some (Genre g) ->
-    { model with
-        Route  = Genre g 
-        Albums = Loading },
-    promiseWD albums.getForGenre g AlbumsFetched
-  | Some Logon ->
-    { model with 
-        Route     = Logon
-        LogonForm = Logon.init ()
-        LogonMsg  = None }, Cmd.none
   | Some route ->
-    { model with Route = route }, Cmd.none
+    { model with Route = route }, cmd
   | None ->
     { model with Route = Woops }, Navigation.modifyUrl (hash Woops)
 
@@ -129,7 +136,7 @@ let viewUnauthorized = [
 
 let admin model view =
   match model.User with
-  | LoggedAsAdmin _ -> view
+  | LoggedIn { Role = Admin } -> view
   | _ -> viewUnauthorized
 
 let viewMain model dispatch =
@@ -210,7 +217,18 @@ let view model dispatch =
     ]
   ]
 
+#if DEBUG
+open Elmish.Debug
+open Elmish.HMR
+#endif
 Program.mkProgram init update view
 |> Program.toNavigable parser urlUpdate
+#if DEBUG
+|> Program.withConsoleTrace
+|> Program.withHMR
+#endif
 |> Program.withReact "elmish-app"
+#if DEBUG
+|> Program.withDebugger
+#endif
 |> Program.run

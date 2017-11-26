@@ -6,6 +6,8 @@ nuget Fable.Elmish.React
 nuget Fable.Elmish.Browser
 nuget Fable.JsonConverter
 nuget Fable.Remoting.Client
+nuget Fable.Elmish.Debugger
+nuget Fable.Elmish.HMR
 
 nuget FSharp.Core
 nuget Suave

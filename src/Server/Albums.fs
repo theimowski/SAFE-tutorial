@@ -11,6 +11,14 @@ let albumDetails (a : Db.AlbumDetails) =
     Price  = a.Price
     ArtUrl = a.Albumarturl }
 
+let getAll () =
+  async {
+    return
+      Db.ctx().Public.Albumdetails
+      |> Seq.toList
+      |> List.map albumDetails
+  }
+
 let getById id =
   async {
     return
@@ -36,7 +44,8 @@ let getForGenre genre =
   }
 
 let webpart = 
-  { getById     = getById
+  { getAll      = getAll
+    getById     = getById
     getForGenre = getForGenre }
   |> fun x -> 
     Fable.Remoting.Suave.FableSuaveAdapter.webPartWithBuilderFor 
