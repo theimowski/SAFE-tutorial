@@ -30,7 +30,7 @@ let update msg model =
   | UserName name -> set { model.LogonForm with UserName = name }, Cmd.none
   | Password pass -> set { model.LogonForm with Password = pass }, Cmd.none
   | Logon form -> 
-    model, promiseWD account.logon form LoggedOn
+    { model with User = LoggingIn }, promiseWD account.logon form LoggedOn
   | LoggedOn (Ready (Some creds)) ->
     //let cartCmd =
     //  match model.User with

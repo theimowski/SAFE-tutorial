@@ -6,6 +6,7 @@ open MusicStore.Navigation
 type User =
 | LoggedOff
 | CartIdOnly of string
+| LoggingIn
 | LoggedIn of Credentials
 
 type Model = 

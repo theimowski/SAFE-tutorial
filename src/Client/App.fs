@@ -170,6 +170,8 @@ let userView model dispatch =
     | LoggedIn creds ->
       yield str (sprintf "Logged on as %s, " creds.Name)
       yield a [Href (hash Home); onClick dispatch LogOff] [str "Log off"]
+    | LoggingIn ->
+      yield gear ""
     | LoggedOff
     | CartIdOnly _ ->
       yield aHref "Log on" Logon
