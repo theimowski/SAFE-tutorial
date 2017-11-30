@@ -82,6 +82,7 @@ module ApiRemoting =
     getById     : int -> Async<AlbumDetails option>
     getForGenre : string -> Async<AlbumDetails list>
     create      : Form.NewAlbum -> Async<unit>
+    delete      : int -> Async<int>
   }
 
   type Genres = {

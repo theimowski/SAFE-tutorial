@@ -539,10 +539,6 @@ let admin success =
       | _ -> UNAUTHORIZED "Not logged in"
   )
 
-let deleteAlbum id =
-  albums <- Map.remove id albums
-  OK (string id)
-
 let updateAlbum id ctx = async {
   let editedAlbum =
     ctx.request.rawForm
@@ -577,7 +573,6 @@ let passHash (pass: string) =
 
 let album id =
   choose [
-    DELETE >=> admin (deleteAlbum id)
     PATCH  >=> admin (updateAlbum id)
   ]
 

@@ -44,6 +44,25 @@ let getForGenre genre =
       |> List.map albumDetails
   }
 
+let delete id =
+  async {
+    let ctx = Db.ctx()
+    let album =
+      query {
+        for album in ctx.Public.Albums do
+          where (album.Albumid = id)
+          select album
+      }
+      |> Seq.tryHead
+    match album with
+    | Some a ->
+      a.Delete()
+      ctx.SubmitUpdates()
+    | None ->
+      failwith "album not found"
+    return id
+  }
+
 let create (form : Form.NewAlbum) =
   async {
     let ctx = Db.ctx()
@@ -60,7 +79,8 @@ let webpart =
   { getAll      = getAll
     getById     = getById
     getForGenre = getForGenre
-    create      = create }
+    create      = create
+    delete      = delete }
   |> fun x -> 
     Fable.Remoting.Suave.FableSuaveAdapter.webPartWithBuilderFor 
       x ApiRemoting.routeBuilder

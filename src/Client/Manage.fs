@@ -10,24 +10,24 @@ open MusicStore.DTO
 open MusicStore.Model
 open MusicStore.Navigation
 open MusicStore.View
+open MusicStore.Api.Remoting
 
 type Msg =
 | DeleteAlbum of AlbumDetails
 | EditAlbumMsg of AlbumDetails
-| AlbumDeleted of Result<int, exn>
+| AlbumDeleted of WebData<int>
+| AlbumsFetched of WebData<AlbumDetails list>
 
 let update msg model =
   match msg with
-  //| DeleteAlbum album ->
-  //  match model.User with
-  //  | LoggedAsAdmin token -> 
-  //    model, promise (delete token) album AlbumDeleted
-  //  | _ ->
-  //    model, Cmd.none
+  | DeleteAlbum album ->
+      model, promiseWD albums.delete album.Id AlbumDeleted
   //| EditAlbumMsg album ->
   //  { model with EditAlbum = EditAlbum.init album } , Cmd.none
-  | AlbumDeleted  (Error _) ->
-    model, Cmd.none
+  | AlbumDeleted id ->
+    model, promiseWD albums.getAll () AlbumsFetched
+  | AlbumsFetched albums ->
+    { model with Albums = albums }, Cmd.none
   //| AlbumDeleted (Ok id) ->
   //  let albums = model.Albums |> List.filter (fun a -> a.Id <> id) 
   //  { model with Albums = albums }, Cmd.none
