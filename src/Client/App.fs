@@ -14,12 +14,14 @@ open MusicStore.Navigation
 open MusicStore.DTO.Form
 open MusicStore.DTO.ApiRemoting
 open Fable.PowerPack.PromiseImpl
+open MusicStore.Api.Remoting
 
 type Msg =
 | GenresFetched      of WebData<Genre list>
 | BestsellersFetched of WebData<Bestseller list>
 | AlbumFetched       of WebData<AlbumDetails option>
 | AlbumsFetched      of WebData<AlbumDetails list>
+| ArtistsFetched     of WebData<Artist list>
 
 | ManageMsg of Manage.Msg
 | NewAlbumMsg of NewAlbum.Msg
@@ -60,12 +62,12 @@ let init route =
 
   let initModel =
     { Route         = Home
+      Albums        = NotAsked
+      Artists       = NotAsked
       Genres        = Loading
       Bestsellers   = Loading
       SelectedAlbum = NotAsked
-      Albums        = NotAsked
 
-      Artists       = []
       User          = LoggedOff
       CartItems     = []
       NewAlbum      = NewAlbum.init ()
@@ -78,6 +80,7 @@ let init route =
     Cmd.batch [
       promiseWD genres.get () GenresFetched
       promiseWD bestsellers.get () BestsellersFetched
+      promiseWD artists.get () ArtistsFetched
     ]
 
   match route with
@@ -97,7 +100,9 @@ let update msg (model : Model) =
     { model with SelectedAlbum = album }, Cmd.none
   | AlbumsFetched albums ->
     { model with Albums = albums }, Cmd.none
- 
+  | ArtistsFetched artists ->
+    { model with Artists = artists }, Cmd.none
+
   | ManageMsg msg ->
     let m, msg = Manage.update msg model
     m, Cmd.map ManageMsg msg
@@ -145,7 +150,7 @@ let viewMain model dispatch =
   | Manage      -> 
     admin model (Manage.view model (ManageMsg >> dispatch))
   | NewAlbum    -> 
-    admin model (NewAlbum.view model (NewAlbumMsg >> dispatch))
+    NewAlbum.view model (NewAlbumMsg >> dispatch)
   | Logon       -> Logon.view model (LogonMsg >> dispatch)
   | Register    -> Register.view model (RegisterMsg >> dispatch)
   | Cart        -> Cart.view model (CartMsg >> dispatch)

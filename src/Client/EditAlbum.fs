@@ -58,45 +58,49 @@ let update msg model =
 
 
 let view album model dispatch = 
-  let genres = []
-    
-  let artists = 
-    model.Artists 
-    |> List.map (fun a -> string a.Id, a.Name)
-    |> List.sortBy snd
-  [
-  h2 [] [ str "Edit" ]
-  form [ ] [
-    fieldset [] [
-      legend [] [ str "Album" ]
-      formLbl "Genre"
-      formFld 
-        (select [Name "Genre"
-                 onInput (int >> Genre >> dispatch)]  
-                genres
-                (string model.EditAlbum.Genre))
-      formLbl "Artist"
-      formFld 
-        (select [Name "Artist"
-                 onInput (int >> Artist >> dispatch)]
-                artists
-                (string model.EditAlbum.Artist))
-      formLbl "Title"
-      formFld 
-        (input [Name "Title"
-                Value model.EditAlbum.Title
-                Type "text"
-                onInput (Title >> dispatch)])
-      formLbl "Price"
-      formFld 
-        (input [Name "Price"
-                Value (string model.EditAlbum.Price)
-                Type "number"
-                onInput (decimal >> Price >> dispatch)])
+  match model.Genres, model.Artists with
+  | Loading, _ 
+  | _, Loading -> [ gear "" ]
+  | Ready genres, Ready artists ->
+    let genres =
+      genres
+      |> List.map (fun g -> string g.Id, g.Name)
+    let artists = 
+      artists
+      |> List.map (fun a -> string a.Id, a.Name)
+      |> List.sortBy snd
+    [ h2 [] [ str "Edit" ]
+      form [ ] [
+        fieldset [] [
+          legend [] [ str "Album" ]
+          formLbl "Genre"
+          formFld 
+            (select [Name "Genre"
+                     onInput (int >> Genre >> dispatch)]  
+                    genres
+                    (string model.EditAlbum.Genre))
+          formLbl "Artist"
+          formFld 
+            (select [Name "Artist"
+                     onInput (int >> Artist >> dispatch)]
+                    artists
+                    (string model.EditAlbum.Artist))
+          formLbl "Title"
+          formFld 
+            (input [Name "Title"
+                    Value model.EditAlbum.Title
+                    Type "text"
+                    onInput (Title >> dispatch)])
+          formLbl "Price"
+          formFld 
+            (input [Name "Price"
+                    Value (string model.EditAlbum.Price)
+                    Type "number"
+                    onInput (decimal >> Price >> dispatch)])
+        ]
+      ]
+      button [ ClassName "button"; onClick dispatch (EditAlbum model.EditAlbum) ] [ str   "Save" ]
+      br []
+      br []
+      div [] [ aHref "Back to list" Manage ]
     ]
-  ]
-  button [ ClassName "button"; onClick dispatch (EditAlbum model.EditAlbum) ] [ str "Save" ]
-  br []
-  br []
-  div [] [ aHref "Back to list" Manage ]
-]

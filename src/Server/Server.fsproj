@@ -11,6 +11,7 @@
     <Compile Include="Albums.fs" />
     <Compile Include="Account.fs" />
     <Compile Include="Bestsellers.fs" />
+    <Compile Include="Artists.fs" />
     <Compile Include="Genres.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

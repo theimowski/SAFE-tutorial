@@ -2,6 +2,7 @@ module Albums
 
 open MusicStore.DTO
 open MusicStore.DTO.ApiRemoting
+open MusicStore
 
 let albumDetails (a : Db.AlbumDetails) =
   { Id     = a.Albumid
@@ -43,10 +44,23 @@ let getForGenre genre =
       |> List.map albumDetails
   }
 
+let create (form : Form.NewAlbum) =
+  async {
+    let ctx = Db.ctx()
+    let album =
+      ctx.Public.Albums.Create(
+        form.Artist,
+        form.Genre,
+        form.Price,
+        form.Title)
+    ctx.SubmitUpdates()
+  }
+
 let webpart = 
   { getAll      = getAll
     getById     = getById
-    getForGenre = getForGenre }
+    getForGenre = getForGenre
+    create      = create }
   |> fun x -> 
     Fable.Remoting.Suave.FableSuaveAdapter.webPartWithBuilderFor 
       x ApiRemoting.routeBuilder

@@ -11,9 +11,6 @@ open MusicStore.DTO
 open MusicStore.Model
 open System.Net.Http
 
-let albums () =
-  fetchAs<Album[]> "/api/albums" []
-
 let authHeader (token : string) = Authorization ("Bearer " + token) 
 
 let delete token (album : Album) =
@@ -21,12 +18,6 @@ let delete token (album : Album) =
     (sprintf "/api/album/%d" album.Id) 
     [ Method HttpMethod.DELETE
       requestHeaders [ authHeader token ]]
-
-let create token (album : Form.NewAlbum) =
-  fetchAs<Album> "/api/albums" [
-    Method HttpMethod.POST
-    requestHeaders [ authHeader token ]
-    album |> toJson |> U3.Case3 |> Body]
 
 let edit token (album : Form.EditAlbum) =
   fetchAs<Album> (sprintf "/api/album/%d" album.Id) [
@@ -75,6 +66,10 @@ module Remoting =
     Proxy.createWithBuilder<ApiRemoting.Albums> (sprintf "/api/%s/%s")
   let genres = 
     Proxy.createWithBuilder<ApiRemoting.Genres> (sprintf "/api/%s/%s")
+
+  let artists = 
+    Proxy.createWithBuilder<ApiRemoting.Artists> (sprintf "/api/%s/%s")
+
   let bestsellers = 
     Proxy.createWithBuilder<ApiRemoting.Bestsellers> (sprintf "/api/%s/%s")
   let account = 

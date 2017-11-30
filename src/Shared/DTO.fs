@@ -81,6 +81,7 @@ module ApiRemoting =
     getAll      : unit -> Async<AlbumDetails list>
     getById     : int -> Async<AlbumDetails option>
     getForGenre : string -> Async<AlbumDetails list>
+    create      : Form.NewAlbum -> Async<unit>
   }
 
   type Genres = {
@@ -93,4 +94,8 @@ module ApiRemoting =
 
   type Account = {
     logon : Form.Logon -> Async<Credentials option>
+  }
+
+  type Artists = {
+    get : unit -> Async<Artist list>
   }

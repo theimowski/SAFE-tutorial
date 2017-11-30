@@ -532,46 +532,12 @@ let getAlbums =
     |> ServerCode.FableJson.toJson
     |> OK)
 
-let addAlbum (ctx : HttpContext) = async {
-  let newAlbum =
-    ctx.request.rawForm
-    |> System.Text.Encoding.UTF8.GetString
-    |> ServerCode.FableJson.ofJson<Form.NewAlbum>
-  
-  let id = 
-    albums
-    |> Seq.map (fun kv -> kv.Value.Id)
-    |> Seq.max
-    |> (+) 1
-
-  let artist = Map.find newAlbum.Artist artists
-  let genre  = Map.find newAlbum.Genre genres
-
-  let album : Album =
-    { Id     = id
-      Artist = artist
-      Genre  = genre
-      Title  = newAlbum.Title
-      Price  = newAlbum.Price
-      ArtUrl = "/placeholder.gif" }
-  
-  albums <- Map.add album.Id album albums
-
-  return! (OK (ServerCode.FableJson.toJson album) ctx)
-}
-
 let admin success =
   ServerCode.Auth.loggedOn (function
       | Some { UserRights.Role = Admin } -> success
       | Some _ -> FORBIDDEN "Only for admin"
       | _ -> UNAUTHORIZED "Not logged in"
   )
-
-let albumsApi =
-  choose [
-    GET >=> getAlbums
-    POST >=> admin addAlbum
-  ]
 
 let deleteAlbum id =
   albums <- Map.remove id albums
@@ -750,9 +716,9 @@ let app =
     Account.webpart
     Albums.webpart
     Genres.webpart
+    Artists.webpart
     Bestsellers.webpart
 
-    path "/api/albums" >=> albumsApi
     pathScan "/api/album/%d" album
     pathScan "/api/cart/%s" cart
     path "/api/accounts/register" >=> POST >=> register

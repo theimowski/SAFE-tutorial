@@ -13,8 +13,8 @@
     <Compile Include="Genre.fs" />
     <Compile Include="Album.fs" />
     <Compile Include="NewAlbum.fs" />
-    <Compile Include="EditAlbum.fs" />
     <Compile Include="Manage.fs" />
+    <Compile Include="EditAlbum.fs" />
     <Compile Include="Logon.fs" />
     <Compile Include="Cart.fs" />
     <Compile Include="Register.fs" />

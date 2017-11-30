@@ -12,6 +12,7 @@ open MusicStore.DTO
 open MusicStore.Model
 open MusicStore.Navigation
 open MusicStore.View
+open MusicStore.Api.Remoting
 
 let init () : Form.NewAlbum =
   { Genre  = 0
@@ -25,7 +26,7 @@ type Msg =
 | Title        of string
 | Price        of decimal
 | NewAlbum     of Form.NewAlbum
-| AlbumCreated of Result<Album, exn>
+| AlbumCreated of WebData<unit>
 
 let update msg model =
   let set newAlbum = { model with NewAlbum = newAlbum }
@@ -37,54 +38,58 @@ let update msg model =
   | NewAlbum a ->
     let cmd =
       match model.User with
-      | LoggedAsAdmin token ->
-        Cmd.batch [ promise (create token) a AlbumCreated 
+      | LoggedAsAdmin _ ->
+        Cmd.batch [ promiseWD albums.create a AlbumCreated 
                     redirect Manage]
       | _ -> Cmd.none
     model, cmd
-  //| AlbumCreated (Ok album) -> 
-  //  { model with Albums = album :: model.Albums }, Cmd.none
   | AlbumCreated _ -> model, Cmd.none
 
-let view model dispatch = 
-  let genres = []
-  let artists = 
-    model.Artists 
-    |> List.map (fun a -> string a.Id, a.Name)
-    |> List.sortBy snd
-  [
-  h2 [] [ str "Create" ]
-  form [ ] [
-    fieldset [] [
-      legend [] [ str "Album" ]
-      formLbl "Genre"
-      formFld 
-        (select [Name "Genre"
-                 onInput (int >> Genre >> dispatch)]  
-                genres
-                (string model.NewAlbum.Genre))
-      formLbl "Artist"
-      formFld 
-        (select [Name "Artist"
-                 onInput (int >> Artist >> dispatch)]
-                artists
-                (string model.NewAlbum.Artist))
-      formLbl "Title"
-      formFld 
-        (input [Name "Title"
-                Value model.NewAlbum.Title
-                Type "text"
-                onInput (Title >> dispatch)])
-      formLbl "Price"
-      formFld 
-        (input [Name "Price"
-                Value (string model.NewAlbum.Price)
-                Type "number"
-                onInput (decimal >> Price >> dispatch)])
+let view model dispatch =
+  match model.Genres, model.Artists with
+  | Loading, _ 
+  | _, Loading -> [ gear "" ]
+  | Ready genres, Ready artists ->
+    let genres =
+      genres
+      |> List.map (fun g -> string g.Id, g.Name)
+    let artists = 
+      artists
+      |> List.map (fun a -> string a.Id, a.Name)
+      |> List.sortBy snd
+    [ h2 [] [ str "Create" ]
+      form [ ] [
+        fieldset [] [
+          legend [] [ str "Album" ]
+          formLbl "Genre"
+          formFld 
+            (select [Name "Genre"
+                     onInput (int >> Genre >> dispatch)]  
+                    genres
+                    (string model.NewAlbum.Genre))
+          formLbl "Artist"
+          formFld 
+            (select [Name "Artist"
+                     onInput (int >> Artist >> dispatch)]
+                    artists
+                    (string model.NewAlbum.Artist))
+          formLbl "Title"
+          formFld 
+            (input [Name "Title"
+                    Value model.NewAlbum.Title
+                    Type "text"
+                    onInput (Title >> dispatch)])
+          formLbl "Price"
+          formFld 
+            (input [Name "Price"
+                    Value (string model.NewAlbum.Price)
+                    Type "number"
+                    onInput (decimal >> Price >> dispatch)])
+        ]
+      ]
+      button [ ClassName "button"; onClick dispatch (NewAlbum model.NewAlbum) ] [ str   "Create" ]
+      br []
+      br []
+      div [] [ aHref "Back to list" Manage ]
     ]
-  ]
-  button [ ClassName "button"; onClick dispatch (NewAlbum model.NewAlbum) ] [ str "Create" ]
-  br []
-  br []
-  div [] [ aHref "Back to list" Manage ]
-]
+  | _ -> [ str "Failed to fetch data" ]

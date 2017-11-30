@@ -11,12 +11,12 @@ type User =
 
 type Model = 
   { Route         : Route
+    Albums        : WebData<AlbumDetails list>
+    Artists       : WebData<Artist list>
     Genres        : WebData<Genre list>
     Bestsellers   : WebData<Bestseller list>
     SelectedAlbum : WebData<AlbumDetails option>
-    Albums        : WebData<AlbumDetails list>
 
-    Artists       : Artist list
     User          : User
     CartItems     : CartItem list
     NewAlbum      : Form.NewAlbum
